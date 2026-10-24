@@ -1,0 +1,49 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: facturation-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/facturation_db
+    username: ${DB_USER:recrutement}
+    password: ${DB_PASSWORD:recrutement}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    username: ${RABBITMQ_USER:recrutement}
+    password: ${RABBITMQ_PASSWORD:recrutement}
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: 3
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_INTERNAL_URL:http://localhost:8180}/realms/recrutement/protocol/openid-connect/certs
+          issuer-uri: ${KEYCLOAK_PUBLIC_URL:http://localhost:8180}/realms/recrutement
+
+app:
+  facturation:
+    garantie-mois: 3
+    delai-paiement-jours: 30
+  cabinet:
+    nom: ${CABINET_NOM:[Nom du cabinet]}
+    adresse: ${CABINET_ADRESSE:[Adresse du cabinet]}
+    ice: ${CABINET_ICE:[ICE du cabinet]}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true

@@ -1,0 +1,43 @@
+-- Pipeline de démonstration pour la mission « Développeur Java senior » (Atlas Digital).
+insert into candidature (id, mission_id, entreprise_id, mission_intitule, entreprise_nom, contact_email,
+                         candidat_id, candidat_nom, candidat_email, candidat_titre, candidat_experience, candidat_ville,
+                         candidat_competences, candidat_disponibilite, candidat_pretention, etape, etape_max, score,
+                         note_globale, synthese, presente_le, created_at, updated_at)
+values
+  ('d0000000-0000-0000-0000-000000000001', 'b1111111-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111',
+   'Développeur Java senior', 'Atlas Digital', 'client.atlas@recrutement.local',
+   'c0000000-0000-0000-0000-000000000004', 'Yassine B.', 'candidat@recrutement.local', 'Développeur Java', 7, 'Casablanca',
+   'Java, Spring Boot, React, PostgreSQL', 'Sous 1 mois', 250000, 'PRESENTE', 'PRESENTE', 100,
+   5, 'Solide sur Spring Boot et les API REST, a mené une migration vers les microservices. Communication claire.',
+   now() - interval '3 days', now() - interval '12 days', now() - interval '3 days'),
+  ('d0000000-0000-0000-0000-000000000002', 'b1111111-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111',
+   'Développeur Java senior', 'Atlas Digital', 'client.atlas@recrutement.local',
+   'c0000000-0000-0000-0000-000000000003', 'Rania M.', 'rania.m@exemple.ma', 'Développeuse Java', 6, 'Mohammedia',
+   'Java, Spring Boot, PostgreSQL, Docker', 'Sous 1 mois', 240000, 'PRESENTE', 'PRESENTE', 75,
+   4, 'Très bonne base back-end, à l''aise en production. Moins d''expérience React.',
+   now() - interval '3 days', now() - interval '10 days', now() - interval '3 days'),
+  ('d0000000-0000-0000-0000-000000000003', 'b1111111-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111',
+   'Développeur Java senior', 'Atlas Digital', 'client.atlas@recrutement.local',
+   'c0000000-0000-0000-0000-000000000001', 'Nadia F.', 'nadia.f@exemple.ma', 'Lead développeuse Java', 9, 'Casablanca',
+   'Java, Spring Boot, React, Kafka', 'Sous 1 mois', 280000, 'ENTRETIEN_RECRUTEUR', 'ENTRETIEN_RECRUTEUR', 85,
+   null, null, null, now() - interval '6 days', now() - interval '1 day'),
+  ('d0000000-0000-0000-0000-000000000004', 'b1111111-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111',
+   'Développeur Java senior', 'Atlas Digital', 'client.atlas@recrutement.local',
+   'c0000000-0000-0000-0000-000000000002', 'Hicham A.', 'hicham.a@exemple.ma', 'Développeur Java', 8, 'Casablanca',
+   'Java, Spring Boot, Kafka, PostgreSQL', 'Immédiate', 260000, 'QUALIFIE', 'QUALIFIE', 85,
+   null, null, null, now() - interval '5 days', now() - interval '2 days'),
+  ('d0000000-0000-0000-0000-000000000005', 'b1111111-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111',
+   'Développeur Java senior', 'Atlas Digital', 'client.atlas@recrutement.local',
+   'c0000000-0000-0000-0000-000000000005', 'Omar R.', 'omar.r@exemple.ma', 'Développeur Java', 6, 'Casablanca',
+   'Java, Angular, Oracle', 'Sous 1 mois', 230000, 'SOURCE', 'SOURCE', 55,
+   null, null, null, now() - interval '2 days', now() - interval '2 days'),
+  ('d0000000-0000-0000-0000-000000000006', 'b3333333-0000-0000-0000-000000000001', '33333333-3333-3333-3333-333333333333',
+   'Data analyst', 'Médina Retail', 'data@medina-retail.local',
+   'c0000000-0000-0000-0000-000000000007', 'Salma E.', 'salma.e@exemple.ma', 'Data analyst', 4, 'Casablanca',
+   'SQL, Power BI, Python', 'Sous 1 mois', 180000, 'ENTRETIEN_CLIENT', 'ENTRETIEN_CLIENT', 90,
+   5, 'Excellente maîtrise de Power BI, très à l''aise avec les équipes commerciales.',
+   now() - interval '8 days', now() - interval '20 days', now() - interval '4 days');
+
+insert into entretien (id, candidature_id, date_heure, type, lieu, statut)
+values ('e0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000006', now() + interval '1 day', 'CLIENT', 'Visio', 'CONFIRME'),
+       ('e0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000003', now() + interval '1 day 4 hours', 'RECRUTEUR', 'Téléphone', 'CONFIRME');

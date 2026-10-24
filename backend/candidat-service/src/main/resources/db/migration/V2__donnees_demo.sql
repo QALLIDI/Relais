@@ -1,0 +1,51 @@
+-- Vivier de démonstration (le compte Keycloak candidat@recrutement.local est relié à Yassine B. par e-mail).
+insert into candidat (id, nom_complet, email, titre, annees_experience, niveau, secteur, ville, disponibilite, pretention_salaire, source, langues, consentement_le) values
+  ('c0000000-0000-0000-0000-000000000001', 'Nadia F.', 'nadia.f@exemple.ma', 'Lead développeuse Java', 9, 'SENIOR', 'Banque et assurance', 'Casablanca', 'UN_MOIS', 280000, 'Cooptation', 'Français, anglais', current_date),
+  ('c0000000-0000-0000-0000-000000000002', 'Hicham A.', 'hicham.a@exemple.ma', 'Développeur Java', 8, 'SENIOR', 'Télécoms', 'Casablanca', 'IMMEDIATE', 260000, 'LinkedIn', 'Français, anglais', current_date),
+  ('c0000000-0000-0000-0000-000000000003', 'Rania M.', 'rania.m@exemple.ma', 'Développeuse Java', 6, 'SENIOR', 'Banque et assurance', 'Mohammedia', 'UN_MOIS', 240000, 'LinkedIn', 'Français, anglais', current_date),
+  ('c0000000-0000-0000-0000-000000000004', 'Yassine B.', 'candidat@recrutement.local', 'Développeur Java', 7, 'SENIOR', 'E-commerce', 'Casablanca', 'UN_MOIS', 250000, 'Vivier existant', 'Français, anglais', current_date),
+  ('c0000000-0000-0000-0000-000000000005', 'Omar R.', 'omar.r@exemple.ma', 'Développeur Java', 6, 'SENIOR', 'Banque et assurance', 'Casablanca', 'UN_MOIS', 230000, 'LinkedIn', 'Français, anglais', current_date),
+  ('c0000000-0000-0000-0000-000000000006', 'Mehdi S.', 'mehdi.s@exemple.ma', 'Développeur back-end', 5, 'SENIOR', 'Télécoms', 'Rabat', 'UN_MOIS', 220000, 'Job board', 'Français, anglais', current_date),
+  ('c0000000-0000-0000-0000-000000000007', 'Salma E.', 'salma.e@exemple.ma', 'Data analyst', 4, 'CONFIRME', 'Distribution', 'Casablanca', 'UN_MOIS', 180000, 'Cooptation', 'Français, anglais', current_date),
+  ('c0000000-0000-0000-0000-000000000008', 'Anas R.', 'anas.r@exemple.ma', 'Data analyst', 1, 'JUNIOR', 'Banque et assurance', 'Rabat', 'IMMEDIATE', 120000, 'Job board', 'Français, anglais', current_date),
+  ('c0000000-0000-0000-0000-000000000009', 'Sara T.', 'sara.t@exemple.ma', 'Comptable', 4, 'CONFIRME', 'Santé', 'Casablanca', 'IMMEDIATE', 140000, 'LinkedIn', 'Français, anglais', current_date),
+  ('c0000000-0000-0000-0000-000000000010', 'Youssef A.', 'youssef.a@exemple.ma', 'Ingénieur DevOps', 3, 'CONFIRME', 'Télécoms', 'Rabat', 'TROIS_MOIS', 200000, 'Vivier existant', 'Français, anglais', current_date);
+
+insert into candidat_competence (candidat_id, competence) values
+  ('c0000000-0000-0000-0000-000000000001', 'Java'),
+  ('c0000000-0000-0000-0000-000000000001', 'Spring Boot'),
+  ('c0000000-0000-0000-0000-000000000001', 'React'),
+  ('c0000000-0000-0000-0000-000000000001', 'Kafka'),
+  ('c0000000-0000-0000-0000-000000000002', 'Java'),
+  ('c0000000-0000-0000-0000-000000000002', 'Spring Boot'),
+  ('c0000000-0000-0000-0000-000000000002', 'Kafka'),
+  ('c0000000-0000-0000-0000-000000000002', 'PostgreSQL'),
+  ('c0000000-0000-0000-0000-000000000003', 'Java'),
+  ('c0000000-0000-0000-0000-000000000003', 'Spring Boot'),
+  ('c0000000-0000-0000-0000-000000000003', 'PostgreSQL'),
+  ('c0000000-0000-0000-0000-000000000003', 'Docker'),
+  ('c0000000-0000-0000-0000-000000000004', 'Java'),
+  ('c0000000-0000-0000-0000-000000000004', 'Spring Boot'),
+  ('c0000000-0000-0000-0000-000000000004', 'React'),
+  ('c0000000-0000-0000-0000-000000000004', 'PostgreSQL'),
+  ('c0000000-0000-0000-0000-000000000005', 'Java'),
+  ('c0000000-0000-0000-0000-000000000005', 'Angular'),
+  ('c0000000-0000-0000-0000-000000000005', 'Oracle'),
+  ('c0000000-0000-0000-0000-000000000006', 'Java'),
+  ('c0000000-0000-0000-0000-000000000006', 'Docker'),
+  ('c0000000-0000-0000-0000-000000000006', 'AWS'),
+  ('c0000000-0000-0000-0000-000000000007', 'SQL'),
+  ('c0000000-0000-0000-0000-000000000007', 'Power BI'),
+  ('c0000000-0000-0000-0000-000000000007', 'Python'),
+  ('c0000000-0000-0000-0000-000000000008', 'SQL'),
+  ('c0000000-0000-0000-0000-000000000008', 'Python'),
+  ('c0000000-0000-0000-0000-000000000009', 'Sage'),
+  ('c0000000-0000-0000-0000-000000000009', 'Fiscalité'),
+  ('c0000000-0000-0000-0000-000000000010', 'Docker'),
+  ('c0000000-0000-0000-0000-000000000010', 'Kubernetes'),
+  ('c0000000-0000-0000-0000-000000000010', 'AWS');
+
+insert into candidat_experience (candidat_id, position, periode, poste, employeur, description) values
+  ('c0000000-0000-0000-0000-000000000001', 0, '2022 – aujourd''hui', 'Lead développeuse', 'Banque privée', 'Équipe de 5 développeurs, migration vers des microservices Spring Boot.'),
+  ('c0000000-0000-0000-0000-000000000001', 1, '2018 – 2022', 'Développeuse Java senior', 'Assureur', 'API de paiement, intégration Kafka, front React.'),
+  ('c0000000-0000-0000-0000-000000000004', 0, '2021 – aujourd''hui', 'Développeur Java', 'E-commerce', 'Migration vers les microservices, API REST.');
