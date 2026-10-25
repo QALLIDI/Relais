@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 import { api } from '../../api/client';
 import { initiales, libelleNiveau, mad } from '../../api/format';
 import type { CandidatResume, VivierStats } from '../../api/types';
-import { Chargement, Icone, Tags, TEINTES, Vide } from '../../components/ui';
+import { Chargement, Icone, Pill, Tags, TEINTES, Vide } from '../../components/ui';
 
 const DISPOS = [
   { cle: '', libelle: 'Toutes' },
@@ -59,20 +59,20 @@ export default function Vivier() {
           {resultats.isLoading && <Chargement />}
           {resultats.data?.length === 0 && <Vide>Aucun profil ne correspond à ces critères.</Vide>}
           {resultats.data?.map((c, i) => (
-            <article key={c.id} className="card" style={{ padding: 10, borderRadius: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div className={TEINTES[i % 5]} style={{ position: 'relative', height: 128, borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {c.niveau && <span className="pill dark" style={{ position: 'absolute', top: 10, left: 10, fontWeight: 400, fontSize: 11 }}>{libelleNiveau[c.niveau]}</span>}
-                <span style={{ position: 'absolute', top: 10, right: 10, background: 'var(--surface)', color: 'var(--ink)', fontSize: 11, fontWeight: 600, borderRadius: 999, padding: '3px 9px' }}>{mad(c.pretentionSalaire)}</span>
-                <span style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--surface)', color: 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 600, boxShadow: 'var(--shadow)' }} aria-hidden="true">{initiales(c.nomComplet)}</span>
+            <article key={c.id} className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div className="personne">
+                <span className={`avatar ${c.disponibilite === 'IMMEDIATE' ? 'en-ligne' : ''} ${TEINTES[i % 5]}`} style={{ width: 48, height: 48, flexBasis: 48, fontSize: 15 }} aria-hidden="true">{initiales(c.nomComplet)}</span>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <Link to={`/recruteur/vivier/${c.id}`} className="nom" style={{ fontSize: 16, textDecoration: 'none' }}>{c.nomComplet}</Link>
+                  <div className="sous">{c.titre} · {c.anneesExperience} ans</div>
+                </div>
+                {c.niveau && <span className="pill dark">{libelleNiveau[c.niveau]}</span>}
               </div>
-              <div style={{ padding: '0 6px' }}>
-                <Link to={`/recruteur/vivier/${c.id}`} style={{ fontWeight: 600, fontSize: 16, textDecoration: 'none' }}>{c.nomComplet}</Link>
-                <div className="muted small">{c.titre} · {c.anneesExperience} ans</div>
-              </div>
-              <div style={{ padding: '0 6px' }}><Tags items={c.competences.slice(0, 4)} /></div>
-              <div style={{ padding: '0 6px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <span className="small" style={{ color: c.disponibilite === 'TROIS_MOIS' ? 'var(--warn)' : 'var(--ok)' }}>{c.ville ?? '—'} · {c.disponibiliteLibelle}</span>
-                <Link to={`/recruteur/vivier/${c.id}`} className="ico" style={{ width: 36, height: 36, flexBasis: 36 }} aria-label={`Ouvrir la fiche de ${c.nomComplet}`}><Icone nom="fleche" taille={14} /></Link>
+              <Tags items={c.competences.slice(0, 4)} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12, marginTop: 'auto' }}>
+                <Pill tone={c.disponibilite === 'IMMEDIATE' ? 'ok' : c.disponibilite === 'TROIS_MOIS' ? 'neutral' : 'warn'}>{c.disponibiliteLibelle}</Pill>
+                <span className="small muted">{c.ville ?? '—'} · {mad(c.pretentionSalaire)}</span>
+                <Link to={`/recruteur/vivier/${c.id}`} className="mini" aria-label={`Ouvrir la fiche de ${c.nomComplet}`}><Icone nom="fleche" taille={14} /></Link>
               </div>
             </article>
           ))}

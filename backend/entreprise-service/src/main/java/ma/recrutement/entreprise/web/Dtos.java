@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import ma.recrutement.entreprise.domain.Contact;
+import ma.recrutement.entreprise.domain.DemandeRattachement;
 import ma.recrutement.entreprise.domain.Entreprise;
 import ma.recrutement.entreprise.domain.Mission;
 import ma.recrutement.entreprise.domain.ModeleTarif;
@@ -25,6 +26,14 @@ public final class Dtos {
                              String telephone) {
         public static ContactDto of(Contact c) {
             return new ContactDto(c.getId(), c.getNom(), c.getFonction(), c.getEmail(), c.getTelephone());
+        }
+    }
+
+    public record DemandeRattachementDto(UUID id, String nom, String email, String telephone, String raisonSociale,
+                                         OffsetDateTime createdAt) {
+        public static DemandeRattachementDto of(DemandeRattachement d) {
+            return new DemandeRattachementDto(d.getId(), d.getNom(), d.getEmail(), d.getTelephone(),
+                    d.getRaisonSociale(), d.getCreatedAt());
         }
     }
 

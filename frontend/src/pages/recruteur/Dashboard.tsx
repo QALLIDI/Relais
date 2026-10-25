@@ -1,11 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { api } from '../../api/client';
-import { dateFr, kmad, libelleAvis, libelleStatutMission } from '../../api/format';
+import { dateFr, initiales, kmad, libelleAvis, libelleStatutMission } from '../../api/format';
 import { useReunions } from '../../api/reunions';
-import type { Candidature, FacturationStats, Groupe, Mission, MissionResume, SelectionStats, VivierStats } from '../../api/types';
-import { Batons, Chargement, Icone, Kpi, Pill, toneAvis, toneMission, Vide } from '../../components/ui';
+import type { Candidature, Etape, FacturationStats, Groupe, Mission, MissionResume, SelectionStats, VivierStats } from '../../api/types';
+import { Batons, Chargement, Icone, Kpi, Pill, Score, teinte, toneAvis, toneMission, Vide } from '../../components/ui';
+
+// Vert plein = placé, orange = chez le client, ambre = présenté, rouge = sorti du process.
+const tonsEtape: Partial<Record<Etape, 'ok' | 'info' | 'warn' | 'bad'>> = {
+  PLACE: 'ok', OFFRE: 'info', ENTRETIEN_CLIENT: 'info', PRESENTE: 'warn', REFUSE: 'bad', RETIRE: 'bad',
+};
+const toneEtape = (e: Etape) => tonsEtape[e] ?? 'neutral';
 
 const heure = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
 const jourCourt = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric' });
@@ -13,8 +19,8 @@ const memeJour = (a: Date, b: Date) => a.toDateString() === b.toDateString();
 const COULEURS_SOURCES = ['var(--accent)', 'var(--ink)', '#F3B08C', '#C9C9C4'];
 
 export default function Dashboard() {
-  const navigate = useNavigate();
   const [recherche, setRecherche] = useState('');
+  const [etape, setEtape] = useState('');
   const missions = useQuery({ queryKey: ['missions'], queryFn: async () => (await api.get<Mission[]>('/api/missions')).data });
   const resumes = useQuery({ queryKey: ['selection', 'missions'], queryFn: async () => (await api.get<MissionResume[]>('/api/selection/missions')).data });
   const selection = useQuery({ queryKey: ['selection', 'stats'], queryFn: async () => (await api.get<SelectionStats>('/api/selection/stats')).data });
@@ -49,20 +55,129 @@ export default function Dashboard() {
   // Jauge demi-cercle : 283 = longueur de l'arc de rayon 90.
   const angle = Math.PI * (1 - Math.min(taux, 100) / 100);
 
+  // Mission mise en avant : celle qui a le plus de candidats en cours.
+  const vedette = [...ouvertes].sort((a, b) => (parMission.get(b.id)?.enCours ?? 0) - (parMission.get(a.id)?.enCours ?? 0))[0];
+  const resumeVedette = vedette ? parMission.get(vedette.id) : undefined;
+  const tauxPresentation = resumeVedette?.sources ? Math.round((resumeVedette.presentes / resumeVedette.sources) * 100) : 0;
+  const tauxPourvu = vedette ? Math.min(100, Math.round(((resumeVedette?.places ?? 0) / (vedette.nbPostes || 1)) * 100)) : 0;
+
+  const q = recherche.trim().toLowerCase();
+  const lignes = (enCours.data ?? [])
+    .filter((c) => !etape || c.etape === etape)
+    .filter((c) => !q || `${c.candidatNom} ${c.candidatTitre ?? ''} ${c.missionIntitule} ${c.entrepriseNom}`.toLowerCase().includes(q));
+  const etapesPresentes = [...new Map((enCours.data ?? []).map((c) => [c.etape, c.etapeLibelle])).entries()];
+
   return (
     <>
       <section className="header" style={{ alignItems: 'center' }}>
-        <form role="search" style={{ flex: '1 1 420px', display: 'flex', alignItems: 'center', gap: 12 }}
-          onSubmit={(e) => { e.preventDefault(); navigate(`/recruteur/vivier${recherche.trim() ? `?q=${encodeURIComponent(recherche.trim())}` : ''}`); }}>
-          <label htmlFor="recherche" className="sr-only">Rechercher un profil</label>
-          <input id="recherche" className="input big-search" type="search" placeholder="Rechercher un profil…" value={recherche} onChange={(e) => setRecherche(e.target.value)} />
-          <button type="submit" className="ico" aria-label="Lancer la recherche"><Icone nom="loupe" /></button>
-        </form>
-        <div className="kpis">
-          <Kpi label="Missions ouvertes" value={ouvertes.length} note={aValider.length ? `${aValider.length} à valider` : undefined} tone={aValider.length ? 'warn' : undefined} />
-          <Kpi label="Candidats en process" value={enProcess} note={selection.data?.retoursEnAttente ? `${selection.data.retoursEnAttente} retours attendus` : undefined} tone="ok" />
-          <Kpi label="Factures en retard" value={factu.data?.enRetard ? `${kmad(factu.data.enRetard)} k` : '0'} note={factu.data?.enRetard ? 'à relancer' : undefined} tone={factu.data?.enRetard ? 'bad' : undefined} />
+        <h1>Tableau de bord</h1>
+        <div className="actions">
+          <Link to="/recruteur/vivier" className="btn"><Icone nom="loupe" taille={16} />Rechercher un profil</Link>
+          <Link to="/recruteur/missions/nouvelle" className="btn accent"><Icone nom="plus" taille={16} />Nouvelle mission</Link>
         </div>
+      </section>
+
+      <section className="card focus" aria-label="Mission en avant">
+        <div className="focus-intro">
+          <span>Suivez vos missions <span className="muted">et faites avancer vos candidats, ou</span></span>
+          <Link to="/recruteur/agenda/planifier" className="btn small">Planifier un entretien <Icone nom="externe" taille={14} /></Link>
+        </div>
+        {vedette ? (
+          <div className="focus-panel">
+            <div className="card-head">
+              <div className="row" style={{ alignItems: 'baseline', gap: 10 }}>
+                <h2 style={{ fontSize: 20 }}>{vedette.intitule}</h2>
+                <span className="muted">· {vedette.entrepriseNom}{vedette.ville ? `, ${vedette.ville}` : ''}</span>
+              </div>
+              <div className="actions">
+                {vedette.dateLimite && <span className="muted small">Échéance {dateFr(vedette.dateLimite)}</span>}
+                <Link to={`/recruteur/missions/${vedette.id}`} className="btn accent"><Icone nom="etincelle" taille={16} />Voir le pipeline</Link>
+              </div>
+            </div>
+            <div className="focus-strip">
+              <div className="chips">
+                <span className="chip"><b>{resumeVedette?.sources ?? 0}</b> sourcés</span>
+                <span className="chip"><b>{resumeVedette?.enCours ?? 0}</b> en cours</span>
+                <span className="chip"><b>{resumeVedette?.aEvaluer ?? 0}</b> à évaluer</span>
+                <span className="chip"><b>{resumeVedette?.presentes ?? 0}</b> présentés</span>
+                <span className="chip"><b>{resumeVedette?.places ?? 0}</b> placés</span>
+              </div>
+              <div className="row" style={{ gap: 26 }}>
+                <div className="jauge">
+                  <span><span className="dot" style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--warn-dot)' }} /><b>{tauxPresentation} %</b> présentés</span>
+                  <span className="piste"><span style={{ width: `${tauxPresentation}%`, background: 'var(--warn-dot)' }} /></span>
+                </div>
+                <div className="jauge">
+                  <span><span className="dot" style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--ok-solid)' }} /><b>{tauxPourvu} %</b> pourvue</span>
+                  <span className="piste"><span style={{ width: `${tauxPourvu}%`, background: 'var(--ok-solid)' }} /></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : missions.isLoading ? <Chargement /> : <Vide>Aucune mission ouverte pour le moment.</Vide>}
+      </section>
+
+      <section className="kpis" aria-label="Indicateurs">
+        <Kpi label="Missions ouvertes" value={ouvertes.length} note={aValider.length ? `${aValider.length} à valider` : undefined} tone={aValider.length ? 'warn' : undefined} />
+        <Kpi label="Candidats en process" value={enProcess} note={selection.data?.retoursEnAttente ? `${selection.data.retoursEnAttente} retours attendus` : undefined} tone="ok" />
+        <Kpi label="Entretiens à venir" value={aVenir.length} note={prochain ? `prochain ${memeJour(new Date(prochain.dateHeure), maintenant) ? 'à' : 'le ' + jourCourt.format(new Date(prochain.dateHeure)) + ','} ${heure.format(new Date(prochain.dateHeure))}` : undefined} />
+        <Kpi label="Factures en retard" value={factu.data?.enRetard ? `${kmad(factu.data.enRetard)} k` : '0'} unit={factu.data?.enRetard ? 'MAD' : undefined} note={factu.data?.enRetard ? 'à relancer' : undefined} tone={factu.data?.enRetard ? 'bad' : undefined} />
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <h2>Candidats en process</h2>
+          <div role="search" style={{ flex: '1 1 240px', maxWidth: 340 }}>
+            <label htmlFor="recherche" className="sr-only">Rechercher dans cette liste</label>
+            <input id="recherche" className="input" style={{ width: '100%' }} type="search" placeholder="Rechercher dans cette liste…" value={recherche} onChange={(e) => setRecherche(e.target.value)} />
+          </div>
+          <div className="actions" style={{ marginLeft: 'auto' }}>
+            <label htmlFor="etape" className="sr-only">Filtrer par étape</label>
+            <select id="etape" className="input" value={etape} onChange={(e) => setEtape(e.target.value)}>
+              <option value="">Toutes les étapes</option>
+              {etapesPresentes.map(([e, l]) => <option key={e} value={e}>{l}</option>)}
+            </select>
+          </div>
+        </div>
+        {enCours.isLoading && <Chargement />}
+        {enCours.data && lignes.length === 0 && <Vide>Aucun candidat ne correspond.</Vide>}
+        {lignes.length > 0 && (
+          <div className="table-wrap">
+            <table style={{ minWidth: 820 }}>
+              <thead>
+                <tr><th>Candidat</th><th>Mission</th><th>Étape</th><th className="num">Score</th><th>Mis à jour</th><th className="num">Action</th></tr>
+              </thead>
+              <tbody>
+                {lignes.slice(0, 8).map((c, i) => (
+                  <tr key={c.id}>
+                    <td>
+                      <div className="personne">
+                        <span className={`avatar en-ligne ${teinte(i)}`} aria-hidden="true">{initiales(c.candidatNom)}</span>
+                        <div><div className="nom">{c.candidatNom}</div><div className="sous">{c.candidatTitre ?? '—'}{c.candidatVille ? ` · ${c.candidatVille}` : ''}</div></div>
+                      </div>
+                    </td>
+                    <td><div>{c.missionIntitule}</div><div className="muted small">{c.entrepriseNom}</div></td>
+                    <td><Pill tone={toneEtape(c.etape)}>{c.etapeLibelle}</Pill></td>
+                    <td className="num"><Score value={c.score} /></td>
+                    <td className="muted small">{dateFr(c.updatedAt)}</td>
+                    <td className="num">
+                      <div className="actions" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
+                        <Link className="mini" to={`/recruteur/vivier/${c.candidatId}`} aria-label={`Ouvrir la fiche de ${c.candidatNom}`}><Icone nom="profil" taille={16} /></Link>
+                        <Link className="mini" to={`/recruteur/missions/${c.missionId}`} aria-label={`Voir le pipeline de ${c.missionIntitule}`}><Icone nom="fleche" taille={16} /></Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {enCours.data && enCours.data.length > 0 && (
+          <div className="table-foot">
+            <span><b style={{ color: 'var(--ink)' }}>{Math.min(8, lignes.length)}</b> sur {enCours.data.length} candidatures</span>
+            <Link to="/recruteur/missions" className="btn small">Toutes les missions</Link>
+          </div>
+        )}
       </section>
 
       <div className="grid-auto">

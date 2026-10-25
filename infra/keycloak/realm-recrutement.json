@@ -3,12 +3,13 @@
   "displayName": "Plateforme de recrutement",
   "enabled": true,
   "loginTheme": "recrut",
-  "registrationAllowed": true,
+  "emailTheme": "recrut",
+  "registrationAllowed": false,
   "registrationEmailAsUsername": true,
   "loginWithEmailAllowed": true,
   "resetPasswordAllowed": true,
   "rememberMe": true,
-  "verifyEmail": false,
+  "verifyEmail": true,
   "internationalizationEnabled": true,
   "supportedLocales": [
     "fr",
@@ -45,8 +46,7 @@
     "composites": {
       "realm": [
         "offline_access",
-        "uma_authorization",
-        "CANDIDAT"
+        "uma_authorization"
       ]
     }
   },
@@ -86,7 +86,9 @@
             "introspection.token.claim": "true"
           }
         }
-      ]
+      ],
+      "rootUrl": "http://localhost:3000",
+      "baseUrl": "/"
     },
     {
       "clientId": "swagger",
@@ -107,6 +109,19 @@
       "attributes": {
         "pkce.code.challenge.method": "S256"
       }
+    },
+    {
+      "clientId": "compte-service",
+      "name": "compte-service (Admin API, inscription)",
+      "description": "Crée et active les comptes des candidats et entreprises inscrits en ligne",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "compte-service-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true
     }
   ],
   "components": {
@@ -184,6 +199,20 @@
           "temporary": false
         }
       ]
+    },
+    {
+      "username": "service-account-compte-service",
+      "enabled": true,
+      "serviceAccountClientId": "compte-service",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users",
+          "view-realm"
+        ]
+      }
     }
-  ]
+  ],
+  "passwordPolicy": "length(8) and specialChars(1) and regexPattern(.*[A-Z0-9].*)"
 }

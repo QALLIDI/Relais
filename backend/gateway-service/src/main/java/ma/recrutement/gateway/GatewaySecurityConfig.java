@@ -15,7 +15,8 @@ import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 /**
- * La gateway refuse toute requête /api sans JWT Keycloak valide. Les services revérifient le jeton
+ * La gateway refuse toute requête /api sans JWT Keycloak valide ; seul le parcours d'inscription
+ * (/public/inscription/**) est ouvert sans connexion. Les services revérifient le jeton
  * et appliquent les droits fins par rôle.
  */
 @Configuration
@@ -30,6 +31,7 @@ public class GatewaySecurityConfig {
                 .authorizeExchange(ex -> ex
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .pathMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus").permitAll()
+                        .pathMatchers("/public/inscription/**").permitAll()
                         .pathMatchers("/api/**").authenticated()
                         .anyExchange().denyAll())
                 .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()))

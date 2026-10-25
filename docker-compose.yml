@@ -171,6 +171,7 @@ services:
       SELECTION_SERVICE_URL: http://selection-service:8084
       FACTURATION_SERVICE_URL: http://facturation-service:8085
       NOTIFICATION_SERVICE_URL: http://notification-service:8086
+      COMPTE_SERVICE_URL: http://compte-service:8088
       AGENDA_SERVICE_URL: http://agenda-service:8087
       CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173
       REDIS_HOST: redis
@@ -249,6 +250,8 @@ services:
       SMTP_PORT: "1025"
       RECRUTEUR_EMAIL: ${RECRUTEUR_EMAIL}
       FRONT_URL: http://localhost:3000
+      # console : codes SMS dans les logs et dans Mailpit (aucun SMS réel en local).
+      SMS_PROVIDER: ${SMS_PROVIDER:-console}
     depends_on:
       <<: *service-deps
       mailpit:
@@ -267,6 +270,31 @@ services:
       RECRUTEUR_EMAIL: ${RECRUTEUR_EMAIL}
       # fake : lien visio Jitsi généré sans compte ; google ou microsoft une fois les adaptateurs branchés.
       VISIO_PROVIDER: ${VISIO_PROVIDER:-fake}
+
+  # Inscription : pas de base, état dans Redis et comptes dans Keycloak (Admin API).
+  compte-service:
+    <<: *service
+    build:
+      context: ./backend
+      args:
+        SERVICE: compte-service
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      KEYCLOAK_INTERNAL_URL: http://keycloak:8080
+      KEYCLOAK_PUBLIC_URL: http://localhost:8180
+      JAVA_OPTS: -XX:MaxRAMPercentage=75
+      REDIS_HOST: redis
+      FRONT_URL: http://localhost:3000
+      COMPTE_SERVICE_SECRET: ${COMPTE_SERVICE_SECRET:-compte-service-secret}
+      INSCRIPTION_SECRET: ${INSCRIPTION_SECRET:-dev-inscription-secret-a-changer}
+      PORT: "8088"
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
 
   # ---------------- Front ----------------
   frontend:

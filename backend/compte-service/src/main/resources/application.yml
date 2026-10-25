@@ -1,0 +1,50 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: compte-service
+  # Pas de base de données : inscriptions en cours dans Redis, comptes dans Keycloak.
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9094}
+    producer:
+      acks: all
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_INTERNAL_URL:http://localhost:8180}/realms/recrutement/protocol/openid-connect/certs
+          issuer-uri: ${KEYCLOAK_PUBLIC_URL:http://localhost:8180}/realms/recrutement
+
+app:
+  front-url: ${FRONT_URL:http://localhost:3000}
+  keycloak:
+    url: ${KEYCLOAK_INTERNAL_URL:http://localhost:8180}
+    realm: recrutement
+    client-id: compte-service
+    client-secret: ${COMPTE_SERVICE_SECRET:compte-service-secret}
+    # Client du lien d'activation : après le clic, retour vers le front.
+    client-front: frontend
+  inscription:
+    # Clé HMAC des codes SMS stockés dans Redis : à changer en production.
+    secret: ${INSCRIPTION_SECRET:dev-inscription-secret-a-changer}
+    duree-code: 10m
+    essais-max: 5
+    delai-renvoi: 60s
+    envois-par-heure: 5
+    duree-inscription: 48h
+    duree-lien-email: 24h
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true

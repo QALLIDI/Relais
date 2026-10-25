@@ -49,6 +49,11 @@ spring:
               uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8086}
               predicates:
                 - Path=/api/notifications/**
+            # Inscription : /public/inscription/** est ouvert sans jeton (limité par IP comme le reste).
+            - id: compte-service
+              uri: ${COMPTE_SERVICE_URL:http://localhost:8088}
+              predicates:
+                - Path=/api/comptes/**,/public/inscription/**
             - id: agenda-service
               uri: ${AGENDA_SERVICE_URL:http://localhost:8087}
               predicates:

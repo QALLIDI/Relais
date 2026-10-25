@@ -25,6 +25,7 @@
         <module>selection-service</module>
         <module>facturation-service</module>
         <module>notification-service</module>
+        <module>compte-service</module>
         <module>agenda-service</module>
     </modules>
 
@@ -34,6 +35,8 @@
         <springdoc.version>3.0.0</springdoc.version>
         <minio.version>8.5.12</minio.version>
         <openpdf.version>2.0.3</openpdf.version>
+        <keycloak-admin-client.version>26.0.12</keycloak-admin-client.version>
+        <libphonenumber.version>9.0.42</libphonenumber.version>
         <shedlock.version>7.10.1</shedlock.version>
         <ical4j.version>4.2.5</ical4j.version>
     </properties>
@@ -78,6 +81,16 @@
                 <groupId>com.github.librepdf</groupId>
                 <artifactId>openpdf</artifactId>
                 <version>${openpdf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-admin-client</artifactId>
+                <version>${keycloak-admin-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.googlecode.libphonenumber</groupId>
+                <artifactId>libphonenumber</artifactId>
+                <version>${libphonenumber.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

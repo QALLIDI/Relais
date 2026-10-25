@@ -33,6 +33,9 @@ app:
   front-url: ${FRONT_URL:http://localhost:3000}
   mail:
     from: ${MAIL_FROM:plateforme@recrutement.local}
+  sms:
+    # console : le SMS est écrit dans les logs et dans Mailpit. Un vrai fournisseur se branche ici.
+    provider: ${SMS_PROVIDER:console}
 
 management:
   endpoints:

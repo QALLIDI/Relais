@@ -11,8 +11,10 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.TopicConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.KafkaAdmin;
@@ -35,8 +37,8 @@ import tools.jackson.databind.json.JsonMapper;
  * Spring Boot branche le {@link CommonErrorHandler} sur les {@code @KafkaListener}. Le groupe de
  * consommateurs de chaque service est son nom ({@code spring.kafka.consumer.group-id}).
  */
-@AutoConfiguration
-@ConditionalOnClass({KafkaTemplate.class, JdbcClient.class})
+@AutoConfiguration(afterName = "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration")
+@ConditionalOnClass(KafkaTemplate.class)
 @EnableScheduling
 public class KafkaEventsConfiguration {
 
@@ -67,18 +69,28 @@ public class KafkaEventsConfiguration {
         return new DefaultErrorHandler(versErreurs, new FixedBackOff(1000L, 3));
     }
 
-    @Bean
-    public EventPublisher eventPublisher(DataSource dataSource, JsonMapper json) {
-        return new EventPublisher(JdbcClient.create(dataSource), json);
-    }
+    /**
+     * Outbox et lecture idempotente, pour les services qui ont une base. Un service sans base
+     * (compte-service) publie directement avec {@link KafkaTemplate}.
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = "org.springframework.jdbc.core.simple.JdbcClient")
+    @ConditionalOnBean(DataSource.class)
+    static class Outbox {
 
-    @Bean
-    public OutboxRelay outboxRelay(DataSource dataSource, KafkaTemplate<String, String> kafka) {
-        return new OutboxRelay(JdbcClient.create(dataSource), kafka);
-    }
+        @Bean
+        public EventPublisher eventPublisher(DataSource dataSource, JsonMapper json) {
+            return new EventPublisher(JdbcClient.create(dataSource), json);
+        }
 
-    @Bean
-    public EvenementsRecus evenementsRecus(DataSource dataSource, JsonMapper json) {
-        return new EvenementsRecus(JdbcClient.create(dataSource), json);
+        @Bean
+        public OutboxRelay outboxRelay(DataSource dataSource, KafkaTemplate<String, String> kafka) {
+            return new OutboxRelay(JdbcClient.create(dataSource), kafka);
+        }
+
+        @Bean
+        public EvenementsRecus evenementsRecus(DataSource dataSource, JsonMapper json) {
+            return new EvenementsRecus(JdbcClient.create(dataSource), json);
+        }
     }
 }

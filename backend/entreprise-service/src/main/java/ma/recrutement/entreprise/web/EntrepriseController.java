@@ -6,7 +6,10 @@ import java.util.UUID;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import ma.recrutement.common.security.CurrentUser;
+import ma.recrutement.entreprise.domain.DemandeRattachement;
+import ma.recrutement.entreprise.repository.DemandeRattachementRepository;
 import ma.recrutement.entreprise.service.EntrepriseService;
+import ma.recrutement.entreprise.web.Dtos.DemandeRattachementDto;
 import ma.recrutement.entreprise.web.Dtos.EntrepriseDto;
 import ma.recrutement.entreprise.web.Dtos.EntrepriseRequest;
 import org.springframework.http.HttpStatus;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class EntrepriseController {
 
     private final EntrepriseService service;
+    private final DemandeRattachementRepository demandes;
 
     @GetMapping
     @PreAuthorize("hasRole('RECRUTEUR')")
@@ -31,6 +35,14 @@ public class EntrepriseController {
     @PreAuthorize("hasRole('ENTREPRISE')")
     public EntrepriseDto moi() {
         return service.detail(CurrentUser.entrepriseId());
+    }
+
+    /** Comptes entreprise inscrits en ligne, en attente de rattachement à une entreprise. */
+    @GetMapping("/demandes-rattachement")
+    @PreAuthorize("hasRole('RECRUTEUR')")
+    public List<DemandeRattachementDto> demandesRattachement() {
+        return demandes.findByStatutOrderByCreatedAtAsc(DemandeRattachement.EN_ATTENTE).stream()
+                .map(DemandeRattachementDto::of).toList();
     }
 
     @GetMapping("/{id}")

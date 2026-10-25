@@ -1,6 +1,6 @@
 # Plateforme de pré-sélection de profils
 
-Monorepo : front React, gateway Spring Cloud, Keycloak et 5 microservices Spring Boot, chacun avec sa base PostgreSQL, reliés par Apache Kafka. Redis sert à la limitation de débit de la gateway. Tout se lance en local avec Docker Compose.
+Monorepo : front React, gateway Spring Cloud, Keycloak et des microservices Spring Boot, chacun avec sa base PostgreSQL, reliés par Apache Kafka. Redis sert à la limitation de débit de la gateway et aux codes SMS de l'inscription. Tout se lance en local avec Docker Compose.
 
 ```
 backend/      POM parent Maven + common-lib + gateway-service + 5 services métier
@@ -37,7 +37,7 @@ Le premier build télécharge les dépendances Maven et npm (10 à 15 minutes). 
 | Entreprise (Atlas Digital) | client.atlas@recrutement.local | client |
 | Candidat (Yassine B.) | candidat@recrutement.local | candidat |
 
-Les candidats peuvent aussi s'inscrire eux-mêmes depuis la page de connexion (rôle CANDIDAT attribué par défaut).
+Candidats et entreprises créent leur compte sur http://localhost:3000/inscription (lien « Nouveau utilisateur ? » de la page de connexion). Voir [Inscription](#inscription-compte-service).
 
 ### Parcours à tester
 
@@ -57,7 +57,7 @@ cd backend && mvn -pl candidat-service -am spring-boot:run
 cd frontend && npm install && npm run dev      # http://localhost:5173
 ```
 
-Chaque service lit `localhost` par défaut (voir son `application.yml`). La gateway route `/api/**` vers les services sur les ports 8082 à 8086.
+Chaque service lit `localhost` par défaut (voir son `application.yml`). La gateway route `/api/**` vers les services sur les ports 8082 à 8088 (compte-service : `/api/comptes/**` et `/public/inscription/**`).
 
 Tests unitaires (calcul du score de matching, honoraires et TVA) : `cd backend && mvn test`.
 
@@ -71,14 +71,15 @@ Tests unitaires (calcul du score de matching, honoraires et TVA) : `cd backend &
 | selection-service | 8084 | Pipeline, matching, shortlists, avis client, statistiques | selection_db |
 | agenda-service | 8087 | Réunions : créneaux, disponibilités du client, confirmation, lien visio, invitation `.ics`, rappels, évaluation après entretien | agenda_db |
 | facturation-service | 8085 | Placements, factures, PDF | facturation_db |
-| notification-service | 8086 | E-mails et notifications in-app | notification_db |
+| notification-service | 8086 | E-mails, SMS (adaptateur console en local) et notifications in-app | notification_db |
+| compte-service | 8088 | Inscription candidat ou entreprise : code SMS, création du compte Keycloak, e-mail d'activation | — (Redis + Keycloak) |
 | Keycloak | 8180 | Comptes, rôles, connexion OIDC | keycloak_db |
 
 **Sécurité** : chaque service vérifie lui-même le JWT Keycloak (`common-lib` / `ServiceSecurityConfiguration`). Les rôles de realm deviennent `ROLE_RECRUTEUR`, `ROLE_ENTREPRISE`, `ROLE_CANDIDAT`. Un compte entreprise porte l'attribut Keycloak `entrepriseId`, ajouté au jeton par un mapper : il isole les données de chaque client.
 
 **Appels entre services** : selection-service appelle entreprise-service et candidat-service en REST (OpenFeign), en propageant le jeton de l'utilisateur. agenda-service lit la candidature et sa mission dans selection-service (`/internal/candidatures/{id}/contexte-reunion`, route non exposée par la gateway, droits vérifiés sur le jeton propagé).
 
-**Événements Kafka** : un topic par service émetteur (`entreprise.events`, `candidat.events`, `selection.events`, `facturation.events`, `agenda.events`, plus `compte.events` réservé), 3 partitions, rétention 7 jours. La clé du message est l'identifiant de l'objet concerné ; le type d'événement voyage dans l'en-tête `eventType`, le corps en JSON.
+**Événements Kafka** : un topic par service émetteur (`entreprise.events`, `candidat.events`, `selection.events`, `facturation.events`, `agenda.events`, `compte.events`), 3 partitions, rétention 7 jours. La clé du message est l'identifiant de l'objet concerné ; le type d'événement voyage dans l'en-tête `eventType`, le corps en JSON.
 
 - **Publication** : outbox transactionnelle. Le service écrit l'événement dans sa table `outbox` dans la même transaction que la donnée, puis une tâche l'envoie dans Kafka (`common-lib` : `EventPublisher`, `OutboxRelay`).
 - **Consommation** : un groupe de consommateurs par service (son nom). Chaque événement traité est noté dans `evenement_traite` : un message livré deux fois n'est traité qu'une fois (`EvenementsRecus`).
@@ -86,6 +87,8 @@ Tests unitaires (calcul du score de matching, honoraires et TVA) : `cd backend &
 
 | Événement | Émetteur | Consommateurs |
 | --- | --- | --- |
+| compte.code_sms | compte | notification (code à 6 chiffres par SMS) |
+| compte.cree | compte | candidat (profil vide), entreprise (demande de rattachement) |
 | mission.ouverte | entreprise | notification |
 | candidat.cree / candidat.modifie | candidat | (réservé) |
 | shortlist.envoyee | selection | notification |
@@ -121,6 +124,28 @@ Les entretiens ont quitté selection-service (`/api/entretiens` n'existe plus) :
 docker compose exec postgres psql -U recrutement -d postgres -c "create database agenda_db"
 ```
 
+## Inscription (compte-service)
+
+Parcours public en 5 étapes sur `/inscription` (routes `/public/inscription/**` ouvertes sans jeton par la gateway, limitées par adresse IP) :
+
+1. **Type de compte et e-mail** : candidat ou entreprise (avec la raison sociale), prénom, nom, e-mail.
+2. **Téléphone et mot de passe** : numéro validé par libphonenumber (un numéro par compte activé). compte-service crée le compte Keycloak **désactivé** par l'Admin API, avec le rôle de realm ; le mot de passe va directement dans Keycloak, il n'est jamais stocké.
+3. **Code SMS** à 6 chiffres : haché (HMAC) dans Redis, valable 10 min, 5 essais. Renvoi : 1 toutes les 60 s, 5 par numéro et par heure.
+4. **E-mail d'activation** : le compte est activé avec l'action requise « Vérifier l'e-mail » et Keycloak envoie son e-mail natif (thème `recrut`, lien valable 24 h). `compte.cree` est publié : candidat-service prépare un profil vide, entreprise-service enregistre une demande de rattachement (`GET /api/entreprises/demandes-rattachement`, recruteur).
+5. **Compte activé** : après le clic, le lien ramène sur `/inscription?id=…`. Le candidat se connecte et complète son profil ; l'entreprise voit « en attente de rattachement » tant que le recruteur n'a pas posé l'attribut `entrepriseId`.
+
+Une tâche horaire supprime les comptes Keycloak d'inscriptions non terminées (code SMS jamais validé) après 48 h. compte-service n'a pas de base : sans outbox, il publie directement dans Kafka (`KafkaTemplate`), une étape échoue si Kafka ne répond pas.
+
+**En local**, aucun SMS réel : le code est dans les logs de notification-service (`docker compose logs notification-service | grep "SMS console"`) et dans Mailpit, adressé à `<numéro>@sms.recrutement.local`. Le fournisseur se choisit par `SMS_PROVIDER` (`console` par défaut) ; un vrai fournisseur s'ajoute en implémentant `SmsSender`.
+
+**Keycloak** : inscription libre désactivée, client confidentiel `compte-service` (Client Credentials, rôles `manage-users`, `view-users`, `query-users`, `view-realm`), politique de mot de passe (8 caractères, majuscule ou chiffre, caractère spécial), e-mail vérifié obligatoire pour se connecter. Le secret de développement (`compte-service-secret`, variable `COMPTE_SERVICE_SECRET`) et `INSCRIPTION_SECRET` sont à changer en production.
+
+**Realm déjà importé** : `--import-realm` ignore un realm qui existe déjà. Sur une base Keycloak existante, appliquer ces réglages sans toucher aux comptes :
+
+```bash
+docker compose exec -T keycloak sh < infra/keycloak/appliquer-inscription.sh
+```
+
 ## Observabilité (à ajouter)
 
 Les services exposent déjà `/actuator/prometheus` (Micrometer) et Keycloak a `KC_METRICS_ENABLED=true`. Reste à ajouter dans `docker-compose.yml`, sous un profil `observabilite` : Prometheus, Grafana, Elasticsearch, Logstash et Kibana, plus `logstash-logback-encoder` dans les services pour les logs JSON.
@@ -129,7 +154,8 @@ Les services exposent déjà `/actuator/prometheus` (Micrometer) et Keycloak a `
 
 - L'extraction automatique des CV (Tika) n'est pas encore branchée : le CV est stocké, le profil se saisit à la main.
 - La 2FA du recruteur n'est pas imposée en local : l'activer dans Keycloak (action requise « Configure OTP »).
-- Les comptes entreprise se créent dans la console Keycloak (rôle ENTREPRISE + attribut `entrepriseId`).
+- Le rattachement d'un compte entreprise se fait encore dans la console Keycloak (attribut `entrepriseId`) : l'écran recruteur des demandes de rattachement reste à faire.
+- Pas de fournisseur SMS réel : seul l'adaptateur console existe.
 - Pas encore de tests d'intégration (Testcontainers).
 - Front : CSS maison et glisser-déposer natif HTML5 (pas de Tailwind ni dnd-kit pour l'instant).
 

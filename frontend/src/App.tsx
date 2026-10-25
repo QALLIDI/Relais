@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router';
 import { hasAuthParams, useAuth } from 'react-oidc-context';
 import { setTokenProvider } from './api/client';
 import { lireSession } from './auth/auth';
+import RattachementEnAttente from './pages/entreprise/RattachementEnAttente';
 import { CandidatLayout, EntrepriseLayout, RecruteurLayout } from './components/Layouts';
 import Dashboard from './pages/recruteur/Dashboard';
 import Missions from './pages/recruteur/Missions';
@@ -62,6 +63,11 @@ export default function App() {
         <button className="btn" onClick={() => auth.signoutRedirect()}>Se déconnecter</button>
       </div>
     );
+  }
+
+  // Compte entreprise inscrit en ligne : aucun accès tant que le recruteur ne l'a pas rattaché.
+  if (session.role === 'ENTREPRISE' && !session.entrepriseId) {
+    return <RattachementEnAttente />;
   }
 
   return (
