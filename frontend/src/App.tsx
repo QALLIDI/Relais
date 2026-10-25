@@ -22,6 +22,11 @@ import Shortlist from './pages/entreprise/Shortlist';
 import FacturesClient from './pages/entreprise/Factures';
 import CandidatAccueil from './pages/candidat/Accueil';
 import MonProfil from './pages/candidat/MonProfil';
+import Agenda from './pages/recruteur/Agenda';
+import Planifier from './pages/Planifier';
+import Evaluation from './pages/Evaluation';
+import ReunionsClient from './pages/entreprise/Reunions';
+import ReunionCandidat from './pages/candidat/Reunion';
 
 export default function App() {
   const auth = useAuth();
@@ -74,6 +79,9 @@ export default function App() {
           <Route path="entreprises" element={<Entreprises />} />
           <Route path="facturation" element={<Facturation />} />
           <Route path="statistiques" element={<Statistiques />} />
+          <Route path="agenda" element={<Agenda />} />
+          <Route path="agenda/planifier" element={<Planifier espace="recruteur" />} />
+          <Route path="agenda/:id/evaluation" element={<Evaluation espace="recruteur" />} />
           <Route path="notifications" element={<Notifications />} />
         </Route>
       )}
@@ -83,6 +91,9 @@ export default function App() {
           <Route path="besoin" element={<NouveauBesoin />} />
           <Route path="shortlist/:missionId" element={<Shortlist />} />
           <Route path="factures" element={<FacturesClient />} />
+          <Route path="entretiens" element={<ReunionsClient />} />
+          <Route path="entretiens/planifier" element={<Planifier espace="entreprise" />} />
+          <Route path="entretiens/:id/evaluation" element={<Evaluation espace="entreprise" />} />
           <Route path="notifications" element={<main className="page"><Notifications /></main>} />
         </Route>
       )}
@@ -90,6 +101,7 @@ export default function App() {
         <Route path="/candidat" element={<CandidatLayout />}>
           <Route index element={<CandidatAccueil />} />
           <Route path="profil" element={<MonProfil />} />
+          <Route path="reunions/:id" element={<ReunionCandidat />} />
           <Route path="notifications" element={<main className="page narrow"><Notifications /></main>} />
         </Route>
       )}

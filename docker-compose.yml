@@ -171,6 +171,7 @@ services:
       SELECTION_SERVICE_URL: http://selection-service:8084
       FACTURATION_SERVICE_URL: http://facturation-service:8085
       NOTIFICATION_SERVICE_URL: http://notification-service:8086
+      AGENDA_SERVICE_URL: http://agenda-service:8087
       CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173
       REDIS_HOST: redis
       PORT: "8080"
@@ -252,6 +253,20 @@ services:
       <<: *service-deps
       mailpit:
         condition: service_started
+
+  agenda-service:
+    <<: *service
+    build:
+      context: ./backend
+      args:
+        SERVICE: agenda-service
+    environment:
+      <<: *service-env
+      PORT: "8087"
+      SELECTION_SERVICE_URL: http://selection-service:8084
+      RECRUTEUR_EMAIL: ${RECRUTEUR_EMAIL}
+      # fake : lien visio Jitsi généré sans compte ; google ou microsoft une fois les adaptateurs branchés.
+      VISIO_PROVIDER: ${VISIO_PROVIDER:-fake}
 
   # ---------------- Front ----------------
   frontend:

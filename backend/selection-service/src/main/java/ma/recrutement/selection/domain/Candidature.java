@@ -61,6 +61,13 @@ public class Candidature {
     @Column(columnDefinition = "text")
     private String commentaireClient;
 
+    /** Évaluation structurée après l'entretien client, reçue d'agenda-service (reunion.avis). */
+    private Integer evalTechnique;
+    private Integer evalCommunication;
+    private Integer evalMotivation;
+    private Integer evalEquipe;
+    private String evalDecision;
+
     private OffsetDateTime presenteLe;
     private OffsetDateTime placeLe;
     private LocalDate dateEmbauche;

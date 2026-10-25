@@ -49,6 +49,10 @@ spring:
               uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8086}
               predicates:
                 - Path=/api/notifications/**
+            - id: agenda-service
+              uri: ${AGENDA_SERVICE_URL:http://localhost:8087}
+              predicates:
+                - Path=/api/reunions/**
 
 app:
   cors:

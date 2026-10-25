@@ -20,6 +20,14 @@ public final class Events {
     public static final String CANDIDAT_PLACE = "candidat.place";
     public static final String FACTURE_EMISE = "facture.emise";
 
+    // Réunions (agenda-service)
+    public static final String REUNION_PROPOSEE = "reunion.proposee";
+    public static final String REUNION_CONFIRMEE = "reunion.confirmee";
+    public static final String REUNION_RAPPEL = "reunion.rappel";
+    public static final String REUNION_REPORTEE = "reunion.reportee";
+    public static final String REUNION_ANNULEE = "reunion.annulee";
+    public static final String REUNION_AVIS = "reunion.avis";
+
     private Events() {
     }
 }

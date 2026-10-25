@@ -5,3 +5,4 @@ create database candidat_db;
 create database selection_db;
 create database facturation_db;
 create database notification_db;
+create database agenda_db;

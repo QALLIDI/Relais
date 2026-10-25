@@ -10,7 +10,6 @@ type Dialogue =
   | { type: 'sortie'; candidature: Candidature; etape: Etape }
   | { type: 'placement'; candidature: Candidature }
   | { type: 'evaluation'; candidature: Candidature }
-  | { type: 'entretien'; candidature: Candidature }
   | null;
 
 const SHORTLISTABLES: Etape[] = ['QUALIFIE', 'ENTRETIEN_RECRUTEUR'];
@@ -161,7 +160,7 @@ export default function PipelinePage() {
                         </button>
                       )}
                       <button className="btn small" onClick={() => setDialogue({ type: 'evaluation', candidature: c })}>Évaluer</button>
-                      <button className="btn small" onClick={() => setDialogue({ type: 'entretien', candidature: c })}>Entretien</button>
+                      <Link className="btn small" to={`/recruteur/agenda/planifier?candidature=${c.id}`}>Entretien</Link>
                       <button className="btn small danger" onClick={() => setDialogue({ type: 'sortie', candidature: c, etape: 'REFUSE' })}>Refuser</button>
                     </div>
                   </article>
@@ -193,7 +192,6 @@ export default function PipelinePage() {
       {dialogue?.type === 'sortie' && <DialogueSortie d={dialogue} onClose={() => setDialogue(null)} onValider={(motif) => deplacer.mutate({ id: dialogue.candidature.id, etape: dialogue.etape, motif })} />}
       {dialogue?.type === 'placement' && <DialoguePlacement c={dialogue.candidature} onClose={() => setDialogue(null)} onValider={(salaireAnnuel, dateEmbauche) => deplacer.mutate({ id: dialogue.candidature.id, etape: 'PLACE', salaireAnnuel, dateEmbauche })} />}
       {dialogue?.type === 'evaluation' && <DialogueEvaluation c={dialogue.candidature} onClose={() => setDialogue(null)} onFait={() => { setDialogue(null); rafraichir(); }} />}
-      {dialogue?.type === 'entretien' && <DialogueEntretien c={dialogue.candidature} onClose={() => setDialogue(null)} onFait={() => { setDialogue(null); rafraichir(); void qc.invalidateQueries({ queryKey: ['entretiens'] }); }} />}
     </>
   );
 }
@@ -261,30 +259,3 @@ function DialogueEvaluation({ c, onClose, onFait }: { c: Candidature; onClose: (
   );
 }
 
-function DialogueEntretien({ c, onClose, onFait }: { c: Candidature; onClose: () => void; onFait: () => void }) {
-  const [quand, setQuand] = useState('');
-  const [type, setType] = useState(c.etape === 'PRESENTE' ? 'CLIENT' : 'RECRUTEUR');
-  const [lieu, setLieu] = useState('Visio');
-  const planifier = useMutation({
-    mutationFn: () => api.post('/api/entretiens', { candidatureId: c.id, dateHeure: new Date(quand).toISOString(), type, lieu }),
-    onSuccess: onFait,
-  });
-  return (
-    <Modal titre={`Planifier un entretien avec ${c.candidatNom}`} onClose={onClose}>
-      <label className="field">Date et heure<input type="datetime-local" value={quand} onChange={(e) => setQuand(e.target.value)} /></label>
-      <label className="field">Type
-        <select value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="PREQUALIFICATION">Pré-qualification</option>
-          <option value="RECRUTEUR">Entretien recruteur</option>
-          <option value="CLIENT">Entretien client</option>
-        </select>
-      </label>
-      <label className="field">Lieu<input value={lieu} onChange={(e) => setLieu(e.target.value)} /></label>
-      {planifier.error && <Erreur message={messageErreur(planifier.error)} />}
-      <div className="actions" style={{ justifyContent: 'flex-end' }}>
-        <button className="btn" onClick={onClose}>Annuler</button>
-        <button className="btn primary" disabled={!quand || planifier.isPending} onClick={() => planifier.mutate()}>Planifier et prévenir</button>
-      </div>
-    </Modal>
-  );
-}

@@ -88,6 +88,7 @@ export function RecruteurLayout() {
     { to: '/recruteur/missions', label: 'Missions' },
     { to: '/recruteur/vivier', label: 'Vivier' },
     { to: '/recruteur/profils', label: 'Profils' },
+    { to: '/recruteur/agenda', label: 'Agenda' },
     { to: '/recruteur/entreprises', label: 'Entreprises' },
     { to: '/recruteur/facturation', label: 'Facturation' },
     { to: '/recruteur/statistiques', label: 'Statistiques' },
@@ -107,6 +108,7 @@ export function EntrepriseLayout() {
   const liens: Lien[] = [
     { to: '/entreprise', label: 'Mes recrutements', end: true },
     { to: '/entreprise/besoin', label: 'Nouveau besoin' },
+    { to: '/entreprise/entretiens', label: 'Entretiens' },
     { to: '/entreprise/factures', label: 'Factures' },
   ];
   return (

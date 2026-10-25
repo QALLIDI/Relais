@@ -198,6 +198,16 @@ export interface Candidature {
   commentaireClient?: string;
   presenteLe?: string;
   updatedAt: string;
+  evaluationEntretien?: EvaluationEntretien;
+}
+
+/** Grille du client après l'entretien, recopiée sur la candidature par selection-service. */
+export interface EvaluationEntretien {
+  technique: number;
+  communication: number;
+  motivation: number;
+  adequationEquipe: number;
+  decision: string;
 }
 
 export interface Pipeline {
@@ -248,17 +258,71 @@ export interface MaCandidature {
   updatedAt: string;
 }
 
-export interface Entretien {
+/* Réunions (agenda-service) */
+export type NatureReunion = 'PREQUALIFICATION' | 'ENTRETIEN_RECRUTEUR' | 'ENTRETIEN_CLIENT';
+export type TypeReunion = 'VISIO' | 'PRESENTIEL' | 'TELEPHONE';
+export type StatutReunion = 'A_PLANIFIER' | 'PROPOSEE' | 'CONFIRMEE' | 'REPORTEE' | 'ANNULEE' | 'TERMINEE';
+export type DecisionEntretien = 'RETENIR' | 'SECOND_ENTRETIEN' | 'NE_PAS_RETENIR';
+
+export interface Creneau {
   id: string;
-  candidatureId: string;
-  missionIntitule: string;
-  entrepriseNom: string;
-  candidatNom: string;
-  dateHeure: string;
-  type: 'PREQUALIFICATION' | 'RECRUTEUR' | 'CLIENT';
+  debut: string;
+  fin: string;
+  choisi: boolean;
+}
+
+export interface ParticipantReunion {
+  nom?: string;
+  email?: string;
+  role: 'CANDIDAT' | 'CLIENT' | 'RECRUTEUR';
+  reponse: 'EN_ATTENTE' | 'ACCEPTE' | 'DECLINE';
+  facultatif: boolean;
+}
+
+export interface EvaluationReunion {
+  technique: number;
+  communication: number;
+  motivation: number;
+  adequationEquipe: number;
+  moyenne: number;
+  decision: DecisionEntretien;
+  commentaire?: string;
+  auteur?: string;
+  createdAt: string;
+}
+
+export interface Reunion {
+  id: string;
+  candidatureId?: string;
+  missionId?: string;
+  missionIntitule?: string;
+  entrepriseId?: string;
+  entrepriseNom?: string;
+  candidatNom?: string;
+  nature: NatureReunion;
+  natureLibelle: string;
+  type: TypeReunion;
+  typeLibelle: string;
+  dureeMinutes: number;
+  statut: StatutReunion;
   lieu?: string;
-  statut: 'PROPOSE' | 'CONFIRME' | 'ANNULE';
+  lienVisio?: string;
+  debut?: string;
+  fin?: string;
+  motif?: string;
   compteRendu?: string;
+  creneaux: Creneau[];
+  participants: ParticipantReunion[];
+  evaluation?: EvaluationReunion;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlageDisponibilite {
+  id?: string;
+  jour: number;
+  heureDebut: string;
+  heureFin: string;
 }
 
 export interface MissionResume {

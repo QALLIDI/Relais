@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { api } from '../../api/client';
 import { dateFr, kmad, libelleAvis, libelleStatutMission } from '../../api/format';
-import type { Candidature, Entretien, FacturationStats, Groupe, Mission, MissionResume, SelectionStats, VivierStats } from '../../api/types';
+import { useReunions } from '../../api/reunions';
+import type { Candidature, FacturationStats, Groupe, Mission, MissionResume, SelectionStats, VivierStats } from '../../api/types';
 import { Batons, Chargement, Icone, Kpi, Pill, toneAvis, toneMission, Vide } from '../../components/ui';
 
 const heure = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -17,7 +18,7 @@ export default function Dashboard() {
   const missions = useQuery({ queryKey: ['missions'], queryFn: async () => (await api.get<Mission[]>('/api/missions')).data });
   const resumes = useQuery({ queryKey: ['selection', 'missions'], queryFn: async () => (await api.get<MissionResume[]>('/api/selection/missions')).data });
   const selection = useQuery({ queryKey: ['selection', 'stats'], queryFn: async () => (await api.get<SelectionStats>('/api/selection/stats')).data });
-  const entretiens = useQuery({ queryKey: ['entretiens'], queryFn: async () => (await api.get<Entretien[]>('/api/entretiens')).data });
+  const reunions = useReunions();
   const factu = useQuery({ queryKey: ['facturation', 'stats'], queryFn: async () => (await api.get<FacturationStats>('/api/facturation/stats')).data });
   const vivier = useQuery({ queryKey: ['candidats', 'stats'], queryFn: async () => (await api.get<VivierStats>('/api/candidats/stats')).data });
   const villes = useQuery({ queryKey: ['groupes', 'ville'], queryFn: async () => (await api.get<Groupe[]>('/api/candidats/groupes', { params: { par: 'ville' } })).data });
@@ -33,7 +34,9 @@ export default function Dashboard() {
   const ville = villes.data?.[0];
 
   const maintenant = new Date();
-  const aVenir = (entretiens.data ?? []).filter((e) => e.statut !== 'ANNULE' && new Date(e.dateHeure) >= new Date(maintenant.toDateString()))
+  // Réunions confirmées (agenda-service), à partir d'aujourd'hui.
+  const aVenir = (reunions.data ?? []).flatMap((r) => (r.statut === 'CONFIRMEE' && r.debut ? [{ ...r, dateHeure: r.debut }] : []))
+    .filter((e) => new Date(e.dateHeure) >= new Date(maintenant.toDateString()))
     .sort((a, b) => a.dateHeure.localeCompare(b.dateHeure));
   const prochain = aVenir.find((e) => new Date(e.dateHeure) >= maintenant);
   const aujourdhui = aVenir.filter((e) => memeJour(new Date(e.dateHeure), maintenant));
@@ -100,15 +103,15 @@ export default function Dashboard() {
         <section className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12, minHeight: 250 }}>
           <div className="card-head" style={{ margin: 0, alignItems: 'flex-start' }}>
             <h2 style={{ lineHeight: 1.2 }}>Prochain<br />entretien</h2>
-            <Link to="/recruteur/missions" className="ico" aria-label="Planifier depuis une mission"><Icone nom="plus" taille={16} /></Link>
+            <Link to="/recruteur/agenda/planifier" className="ico" aria-label="Planifier une réunion"><Icone nom="plus" taille={16} /></Link>
           </div>
           {prochain ? (
             <div className="box stack" style={{ gap: 6 }}>
               <span className="pill neutral" style={{ alignSelf: 'flex-start', background: 'var(--surface)', fontWeight: 400 }}>
                 {memeJour(new Date(prochain.dateHeure), maintenant) ? "Aujourd'hui" : jourCourt.format(new Date(prochain.dateHeure))} · {heure.format(new Date(prochain.dateHeure))}
               </span>
-              <div style={{ fontWeight: 600 }}>{prochain.candidatNom}{prochain.type === 'CLIENT' ? ` × ${prochain.entrepriseNom}` : ''}</div>
-              <div className="muted small">{prochain.missionIntitule} · {prochain.lieu ?? 'lieu à préciser'}</div>
+              <div style={{ fontWeight: 600 }}>{prochain.candidatNom}{prochain.nature === 'ENTRETIEN_CLIENT' ? ` × ${prochain.entrepriseNom}` : ''}</div>
+              <div className="muted small">{prochain.missionIntitule} · {prochain.type === 'PRESENTIEL' ? prochain.lieu ?? 'sur site' : prochain.typeLibelle}</div>
             </div>
           ) : <Vide>Aucun entretien planifié.</Vide>}
         </section>
@@ -140,7 +143,7 @@ export default function Dashboard() {
 
         <section className="card" style={{ position: 'relative', overflow: 'hidden', minHeight: 300 }}>
           <div className="card-head">
-            <h2>Entretiens de la semaine</h2>
+            <Link to="/recruteur/agenda" style={{ textDecoration: 'none' }}><h2>Entretiens de la semaine</h2></Link>
             <span className="pill neutral" style={{ fontWeight: 400, padding: '8px 14px', fontSize: 13 }}>{aVenir.length} à venir</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6, textAlign: 'center' }}>

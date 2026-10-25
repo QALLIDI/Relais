@@ -25,6 +25,7 @@
         <module>selection-service</module>
         <module>facturation-service</module>
         <module>notification-service</module>
+        <module>agenda-service</module>
     </modules>
 
     <properties>
@@ -33,6 +34,8 @@
         <springdoc.version>3.0.0</springdoc.version>
         <minio.version>8.5.12</minio.version>
         <openpdf.version>2.0.3</openpdf.version>
+        <shedlock.version>7.10.1</shedlock.version>
+        <ical4j.version>4.2.5</ical4j.version>
     </properties>
 
     <dependencyManagement>
@@ -53,6 +56,18 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.javacrumbs.shedlock</groupId>
+                <artifactId>shedlock-bom</artifactId>
+                <version>${shedlock.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mnode.ical4j</groupId>
+                <artifactId>ical4j</artifactId>
+                <version>${ical4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.minio</groupId>

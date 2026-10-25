@@ -12,12 +12,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import ma.recrutement.common.events.CandidatPlaceEvent;
-import ma.recrutement.common.events.EntretienPlanifieEvent;
+import ma.recrutement.common.events.EvenementsRecus;
 import ma.recrutement.common.events.EventPublisher;
 import ma.recrutement.common.events.Events;
 import ma.recrutement.common.events.Topics;
 import ma.recrutement.common.events.RetourClientEvent;
+import ma.recrutement.common.events.ReunionAvisEvent;
+import ma.recrutement.common.events.ReunionConfirmeeEvent;
 import ma.recrutement.common.events.ShortlistEnvoyeeEvent;
 import ma.recrutement.common.security.CurrentUser;
 import ma.recrutement.common.security.Roles;
@@ -29,11 +32,11 @@ import ma.recrutement.selection.client.EntrepriseClient;
 import ma.recrutement.selection.client.EntrepriseClient.MissionView;
 import ma.recrutement.selection.domain.AvisClient;
 import ma.recrutement.selection.domain.Candidature;
-import ma.recrutement.selection.domain.Entretien;
 import ma.recrutement.selection.domain.Etape;
 import ma.recrutement.selection.repository.CandidatureRepository;
-import ma.recrutement.selection.repository.EntretienRepository;
 import ma.recrutement.selection.web.Dtos.*;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class SelectionService {
 
     private static final List<Etape> COLONNES = List.of(Etape.SOURCE, Etape.QUALIFIE, Etape.ENTRETIEN_RECRUTEUR,
@@ -49,10 +53,10 @@ public class SelectionService {
             Etape.OFFRE, Etape.PLACE);
 
     private final CandidatureRepository candidatures;
-    private final EntretienRepository entretiens;
     private final EntrepriseClient entrepriseClient;
     private final CandidatClient candidatClient;
     private final EventPublisher events;
+    private final EvenementsRecus recus;
 
     // ---------------- Pipeline (recruteur) ----------------
 
@@ -207,7 +211,8 @@ public class SelectionService {
             c.setUpdatedAt(OffsetDateTime.now());
         }
         events.publier(Topics.SELECTION, Events.RETOUR_CLIENT, c.getId(), new RetourClientEvent(c.getId(),
-                c.getMissionIntitule(), c.getCandidatNom(), req.avis().name(), req.commentaire()));
+                c.getMissionIntitule(), c.getCandidatNom(), req.avis().name(), req.commentaire(), c.getMissionId(),
+                c.getEntrepriseId(), c.getEntrepriseNom(), c.getCandidatId(), c.getCandidatEmail(), c.getContactEmail()));
         return ProfilPresenteDto.of(c);
     }
 
@@ -235,58 +240,76 @@ public class SelectionService {
                 .map(MaCandidatureDto::of).toList();
     }
 
-    // ---------------- Entretiens ----------------
-
-    public EntretienDto planifier(EntretienRequest req) {
-        Candidature c = charger(req.candidatureId());
+    /** Contexte d'une candidature pour agenda-service (appel interne, hors gateway). */
+    @Transactional(readOnly = true)
+    public ContexteReunionDto contexteReunion(UUID id) {
+        Candidature c = charger(id);
         if (!CurrentUser.hasRole(Roles.RECRUTEUR) && !c.getEntrepriseId().equals(CurrentUser.entrepriseId())) {
             throw new AccessDeniedException("Ce candidat ne vous a pas été présenté");
         }
-        Entretien e = new Entretien();
-        e.setCandidature(c);
-        e.setDateHeure(req.dateHeure());
-        e.setType(req.type() == null ? Entretien.Type.CLIENT : req.type());
-        e.setLieu(req.lieu());
-        entretiens.save(e);
-        if (e.getType() == Entretien.Type.CLIENT && c.getEtape() == Etape.PRESENTE) {
-            c.passerA(Etape.ENTRETIEN_CLIENT);
-        } else if (e.getType() == Entretien.Type.RECRUTEUR && c.getEtape().ordinal() < Etape.ENTRETIEN_RECRUTEUR.ordinal()) {
-            c.passerA(Etape.ENTRETIEN_RECRUTEUR);
-        }
-        events.publier(Topics.SELECTION, Events.ENTRETIEN_PLANIFIE, c.getId(), new EntretienPlanifieEvent(e.getId(),
-                c.getMissionIntitule(), c.getCandidatNom(), c.getCandidatEmail(), c.getContactEmail(),
-                e.getDateHeure(), e.getLieu()));
-        return EntretienDto.of(e);
+        return ContexteReunionDto.of(c);
     }
 
-    @Transactional(readOnly = true)
-    public List<EntretienDto> entretiensAVenir() {
-        OffsetDateTime maintenant = OffsetDateTime.now().minusHours(2);
-        List<Entretien> liste;
-        if (CurrentUser.hasRole(Roles.RECRUTEUR)) {
-            liste = entretiens.findByDateHeureAfterOrderByDateHeureAsc(maintenant);
-        } else if (CurrentUser.hasRole(Roles.ENTREPRISE)) {
-            liste = entretiens.findByCandidatureEntrepriseIdAndDateHeureAfterOrderByDateHeureAsc(CurrentUser.entrepriseId(), maintenant);
-        } else {
-            liste = entretiens.findByCandidatureCandidatEmailIgnoreCaseAndDateHeureAfterOrderByDateHeureAsc(CurrentUser.email(), maintenant);
+    // ---------------- Réunions (événements d'agenda-service) ----------------
+
+    @KafkaListener(topics = Topics.AGENDA)
+    public void recevoir(ConsumerRecord<String, String> message) {
+        switch (recus.type(message)) {
+            case Events.REUNION_CONFIRMEE -> recus.traiter(message, ReunionConfirmeeEvent.class, this::surReunionConfirmee);
+            case Events.REUNION_AVIS -> recus.traiter(message, ReunionAvisEvent.class, this::surAvis);
+            default -> {
+                // Les autres événements de l'agenda ne changent pas le pipeline.
+            }
         }
-        return liste.stream().filter(e -> e.getStatut() != Entretien.Statut.ANNULE).map(EntretienDto::of).toList();
     }
 
-    public EntretienDto confirmer(UUID id, boolean confirme) {
-        Entretien e = entretiens.findById(id).orElseThrow(() -> new NotFoundException("Entretien introuvable"));
-        String email = e.getCandidature().getCandidatEmail();
-        if (email == null || !email.equalsIgnoreCase(CurrentUser.email())) {
-            throw new AccessDeniedException("Cet entretien ne vous concerne pas");
+    /** Un entretien confirmé fait passer la candidature à l'étape d'entretien correspondante. */
+    void surReunionConfirmee(ReunionConfirmeeEvent e) {
+        if (e.candidatureId() == null) {
+            return;
         }
-        e.setStatut(confirme ? Entretien.Statut.CONFIRME : Entretien.Statut.ANNULE);
-        return EntretienDto.of(e);
+        candidatures.findById(e.candidatureId()).ifPresent(c -> {
+            if ("ENTRETIEN_CLIENT".equals(e.nature())) {
+                if (c.getEtape() == Etape.PRESENTE) {
+                    c.passerA(Etape.ENTRETIEN_CLIENT);
+                }
+            } else if (!"POINT_CLIENT".equals(e.nature()) && c.getEtape().ordinal() < Etape.ENTRETIEN_RECRUTEUR.ordinal()) {
+                c.passerA(Etape.ENTRETIEN_RECRUTEUR);
+            }
+        });
     }
 
-    public EntretienDto compteRendu(UUID id, String texte) {
-        Entretien e = entretiens.findById(id).orElseThrow(() -> new NotFoundException("Entretien introuvable"));
-        e.setCompteRendu(texte);
-        return EntretienDto.of(e);
+    /** L'évaluation du client est enregistrée sur la candidature, qui avance selon sa décision. */
+    void surAvis(ReunionAvisEvent e) {
+        Candidature c = e.candidatureId() == null ? null : candidatures.findById(e.candidatureId()).orElse(null);
+        if (c == null) {
+            log.warn("Avis reçu pour une candidature inconnue : {}", e.candidatureId());
+            return;
+        }
+        c.setEvalTechnique(e.technique());
+        c.setEvalCommunication(e.communication());
+        c.setEvalMotivation(e.motivation());
+        c.setEvalEquipe(e.adequationEquipe());
+        c.setEvalDecision(e.decision());
+        c.setCommentaireClient(e.commentaire());
+        switch (e.decision()) {
+            case "RETENIR" -> {
+                c.setAvisClient(AvisClient.RETENU);
+                if (c.getEtape().ordinal() < Etape.OFFRE.ordinal()) {
+                    c.passerA(Etape.OFFRE);
+                }
+            }
+            case "NE_PAS_RETENIR" -> {
+                c.setAvisClient(AvisClient.REFUSE);
+                c.passerA(Etape.REFUSE);
+                c.setMotifSortie("Refus après entretien" + (e.commentaire() == null ? "" : " : " + e.commentaire()));
+            }
+            default -> {
+                // Second entretien : la candidature reste à l'étape d'entretien, le recruteur replanifie.
+                c.setAvisClient(AvisClient.A_RENCONTRER);
+                c.setUpdatedAt(OffsetDateTime.now());
+            }
+        }
     }
 
     // ---------------- Statistiques ----------------
@@ -303,7 +326,8 @@ public class SelectionService {
         Double delaiPlacement = moyenneJours(placees, Candidature::getPlaceLe);
         Double delaiShortlist = moyenneJours(toutes.stream().filter(c -> c.getPresenteLe() != null).toList(),
                 Candidature::getPresenteLe);
-        long entretiensAVenir = entretiens.findByDateHeureAfterOrderByDateHeureAsc(OffsetDateTime.now()).size();
+        // Les réunions sont dans agenda-service : on compte ici les candidatures en entretien client.
+        long entretiensAVenir = toutes.stream().filter(c -> c.getEtape() == Etape.ENTRETIEN_CLIENT).count();
         long enAttente = toutes.stream().filter(c -> c.getEtape() == Etape.PRESENTE && c.getAvisClient() == null).count();
         return new SelectionStats(entonnoir, placees.size(),
                 presentes == 0 ? 0 : Math.round(1000.0 * placees.size() / presentes) / 10.0,

@@ -1,10 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { Link } from 'react-router';
-import { api, messageErreur } from '../../api/client';
-import { dateCourte, dateHeureFr, initiales } from '../../api/format';
-import type { Candidat, Entretien, MaCandidature } from '../../api/types';
-import { Chargement, Erreur, Progression, Vide } from '../../components/ui';
+import { api } from '../../api/client';
+import { dateCourte, initiales } from '../../api/format';
+import { plage, useReunions } from '../../api/reunions';
+import type { Candidat, MaCandidature } from '../../api/types';
+import { Chargement, Progression, Vide } from '../../components/ui';
 
 function completude(c: Candidat): { pct: number; manque?: string } {
   const champs: [boolean, string][] = [
@@ -21,18 +22,13 @@ function completude(c: Candidat): { pct: number; manque?: string } {
 }
 
 export default function CandidatAccueil() {
-  const qc = useQueryClient();
   const profil = useQuery({
     queryKey: ['candidat', 'me'],
     queryFn: async () => (await api.get<Candidat>('/api/candidats/me')).data,
     retry: (count, error) => !(axios.isAxiosError(error) && error.response?.status === 404) && count < 1,
   });
   const candidatures = useQuery({ queryKey: ['candidatures', 'mes'], queryFn: async () => (await api.get<MaCandidature[]>('/api/candidatures/mes')).data });
-  const entretiens = useQuery({ queryKey: ['entretiens'], queryFn: async () => (await api.get<Entretien[]>('/api/entretiens')).data });
-  const confirmer = useMutation({
-    mutationFn: ({ id, confirme }: { id: string; confirme: boolean }) => api.patch(`/api/entretiens/${id}/confirmation`, { confirme }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['entretiens'] }),
-  });
+  const reunions = useReunions();
 
   const pasDeProfil = axios.isAxiosError(profil.error) && profil.error.response?.status === 404;
   if (profil.isLoading) return <main className="page narrow"><Chargement /></main>;
@@ -49,7 +45,8 @@ export default function CandidatAccueil() {
   }
   const c = profil.data;
   const comp = c ? completude(c) : null;
-  const aConfirmer = entretiens.data?.filter((e) => e.statut === 'PROPOSE') ?? [];
+  const aConfirmer = reunions.data?.filter((r) => r.statut === 'PROPOSEE') ?? [];
+  const confirmees = reunions.data?.filter((r) => r.statut === 'CONFIRMEE' && r.fin && new Date(r.fin) >= new Date()) ?? [];
   const arc = 2 * Math.PI * 16;
 
   return (
@@ -63,7 +60,6 @@ export default function CandidatAccueil() {
           {initiales(c?.nomComplet ?? '')}
         </span>
       </header>
-      {confirmer.error && <Erreur message={messageErreur(confirmer.error)} />}
 
       {comp && (
         <section className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 16, borderRadius: 24 }}>
@@ -80,20 +76,30 @@ export default function CandidatAccueil() {
         </section>
       )}
 
-      {aConfirmer.map((e) => (
-        <section key={e.id} className="card accent stack" style={{ gap: 10, borderRadius: 24, padding: 18 }}>
+      {aConfirmer.map((r) => (
+        <Link key={r.id} to={`/candidat/reunions/${r.id}`} className="card accent stack" style={{ gap: 10, borderRadius: 24, padding: 18, textDecoration: 'none' }}>
           <div className="card-head" style={{ margin: 0 }}>
-            <span className="pill veil">Entretien à confirmer</span>
-            <span className="small">{dateCourte(e.dateHeure)}</span>
+            <span className="pill veil">Entretien : choisissez un créneau</span>
+            <span className="small">{r.creneaux.length} créneau(x)</span>
           </div>
-          <div style={{ fontSize: 22, lineHeight: 1.15 }}>{e.entrepriseNom}<br />{e.missionIntitule}</div>
-          <div className="small">{dateHeureFr(e.dateHeure)} · {e.lieu ?? 'lieu à préciser'}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <button className="btn light" onClick={() => confirmer.mutate({ id: e.id, confirme: true })}>Confirmer</button>
-            <button className="btn" style={{ background: '#17181c', color: '#fff' }} onClick={() => confirmer.mutate({ id: e.id, confirme: false })}>Décliner</button>
-          </div>
-        </section>
+          <div style={{ fontSize: 22, lineHeight: 1.15 }}>{r.entrepriseNom}<br />{r.missionIntitule}</div>
+          <div className="small">{r.natureLibelle} · {r.dureeMinutes} min · {r.typeLibelle.toLowerCase()}{r.creneaux[0] ? ` · dès le ${dateCourte(r.creneaux[0].debut)}` : ''}</div>
+          <span className="btn light" style={{ alignSelf: 'flex-start' }}>Choisir mon créneau</span>
+        </Link>
       ))}
+
+      {confirmees.length > 0 && (
+        <section className="card stack" style={{ borderRadius: 24, gap: 10 }}>
+          <h2>Mes entretiens</h2>
+          {confirmees.map((r) => (
+            <Link key={r.id} to={`/candidat/reunions/${r.id}`} className="tile" style={{ textDecoration: 'none' }}>
+              <span style={{ flex: '1 1 180px', minWidth: 0 }}><b style={{ fontWeight: 600 }}>{r.missionIntitule}</b>
+                <span className="muted small" style={{ display: 'block' }}>{r.debut && r.fin ? plage(r.debut, r.fin) : ''} · {r.type === 'PRESENTIEL' ? r.lieu ?? 'sur site' : r.typeLibelle}</span></span>
+              <span className="pill ok">Confirmé</span>
+            </Link>
+          ))}
+        </section>
+      )}
 
       <section className="card stack" style={{ borderRadius: 24, gap: 14 }}>
         <h2>Mes candidatures</h2>

@@ -3,7 +3,8 @@ import { Link } from 'react-router';
 import { useAuth } from 'react-oidc-context';
 import { api } from '../../api/client';
 import { dateFr, initiales, libelleStatutFacture, libelleStatutMission, n } from '../../api/format';
-import type { Entretien, Facture, Mission, MissionResume, ProfilPresente } from '../../api/types';
+import { useReunions } from '../../api/reunions';
+import type { Facture, Mission, MissionResume, ProfilPresente } from '../../api/types';
 
 const jour = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' });
 const heure = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -21,7 +22,8 @@ export default function EntrepriseAccueil() {
   const auth = useAuth();
   const missions = useQuery({ queryKey: ['missions'], queryFn: async () => (await api.get<Mission[]>('/api/missions')).data });
   const resumes = useQuery({ queryKey: ['selection', 'missions'], queryFn: async () => (await api.get<MissionResume[]>('/api/selection/missions')).data });
-  const entretiens = useQuery({ queryKey: ['entretiens'], queryFn: async () => (await api.get<Entretien[]>('/api/entretiens')).data });
+  const reunions = useReunions();
+  const entretiens = (reunions.data ?? []).filter((r) => (r.statut === 'CONFIRMEE' || r.statut === 'PROPOSEE') && (!r.fin || new Date(r.fin) >= new Date()));
   const factures = useQuery({ queryKey: ['factures'], queryFn: async () => (await api.get<Facture[]>('/api/factures')).data });
   const aVoir = useQuery({ queryKey: ['shortlist', 'a-evaluer'], queryFn: async () => (await api.get<ProfilPresente[]>('/api/shortlists/a-evaluer')).data });
 
@@ -105,22 +107,25 @@ export default function EntrepriseAccueil() {
 
       <div className="grid-2">
         <section className="card">
-          <h2 style={{ marginBottom: 12 }}>Entretiens à venir</h2>
-          {entretiens.data?.length === 0 && <Vide>Aucun entretien planifié.</Vide>}
-          {entretiens.data?.map((e) => {
-            const d = new Date(e.dateHeure);
+          <div className="card-head">
+            <h2>Entretiens à venir</h2>
+            <Link to="/entreprise/entretiens" className="btn small">Tout voir</Link>
+          </div>
+          {entretiens.length === 0 && <Vide>Aucun entretien planifié.</Vide>}
+          {entretiens.map((e) => {
+            const d = e.debut ? new Date(e.debut) : e.creneaux[0] ? new Date(e.creneaux[0].debut) : null;
             return (
-              <div key={e.id} className="tile">
+              <Link key={e.id} to="/entreprise/entretiens" className="tile" style={{ textDecoration: 'none' }}>
                 <div className="box" style={{ textAlign: 'center', padding: '8px 12px', background: 'var(--surface)' }}>
-                  <div className="muted small" style={{ textTransform: 'capitalize' }}>{jour.format(d)}</div>
-                  <div style={{ fontSize: 22, fontWeight: 500 }}>{d.getDate()}</div>
+                  <div className="muted small" style={{ textTransform: 'capitalize' }}>{d ? jour.format(d) : '—'}</div>
+                  <div style={{ fontSize: 22, fontWeight: 500 }}>{d ? d.getDate() : ''}</div>
                 </div>
                 <div style={{ flex: '1 1 200px', minWidth: 0 }}>
                   <div style={{ fontWeight: 600 }}>{e.candidatNom} · {e.missionIntitule}</div>
-                  <div className="muted small">{heure.format(d)} · {e.lieu ?? 'lieu à préciser'}</div>
+                  <div className="muted small">{e.statut === 'CONFIRMEE' && d ? heure.format(d) : `${e.creneaux.length} créneau(x) proposé(s)`} · {e.type === 'PRESENTIEL' ? e.lieu ?? 'sur site' : e.typeLibelle}</div>
                 </div>
-                <Pill tone={e.statut === 'CONFIRME' ? 'ok' : 'warn'}>{e.statut === 'CONFIRME' ? 'Confirmé' : 'À confirmer'}</Pill>
-              </div>
+                <Pill tone={e.statut === 'CONFIRMEE' ? 'ok' : 'warn'}>{e.statut === 'CONFIRMEE' ? 'Confirmé' : 'En attente du candidat'}</Pill>
+              </Link>
             );
           })}
         </section>

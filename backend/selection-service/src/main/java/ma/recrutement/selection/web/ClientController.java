@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import ma.recrutement.selection.service.SelectionService;
 import ma.recrutement.selection.web.Dtos.AvisRequest;
+import ma.recrutement.selection.web.Dtos.ContexteReunionDto;
 import ma.recrutement.selection.web.Dtos.MaCandidatureDto;
 import ma.recrutement.selection.web.Dtos.ProfilPresenteDto;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,6 +36,13 @@ public class ClientController {
     @PreAuthorize("hasRole('ENTREPRISE')")
     public ProfilPresenteDto donnerAvis(@PathVariable UUID id, @Valid @RequestBody AvisRequest req) {
         return service.donnerAvis(id, req);
+    }
+
+    /** Lu par agenda-service avec le jeton de l'utilisateur ; /internal n'est pas routé par la gateway. */
+    @GetMapping("/internal/candidatures/{id}/contexte-reunion")
+    @PreAuthorize("hasAnyRole('RECRUTEUR','ENTREPRISE')")
+    public ContexteReunionDto contexteReunion(@PathVariable UUID id) {
+        return service.contexteReunion(id);
     }
 
     @GetMapping("/api/candidatures/mes")

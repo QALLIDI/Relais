@@ -13,7 +13,6 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import ma.recrutement.selection.domain.AvisClient;
 import ma.recrutement.selection.domain.Candidature;
-import ma.recrutement.selection.domain.Entretien;
 import ma.recrutement.selection.domain.Etape;
 
 public final class Dtos {
@@ -36,16 +35,6 @@ public final class Dtos {
     public record AvisRequest(@NotNull AvisClient avis, String commentaire) {
     }
 
-    public record EntretienRequest(@NotNull UUID candidatureId, @NotNull OffsetDateTime dateHeure,
-                                   Entretien.Type type, String lieu) {
-    }
-
-    public record ConfirmationRequest(boolean confirme) {
-    }
-
-    public record CompteRenduRequest(String compteRendu) {
-    }
-
     /** Vue recruteur d'une candidature (carte du pipeline). */
     public record CandidatureDto(UUID id, UUID missionId, String missionIntitule, UUID entrepriseId,
                                  String entrepriseNom, UUID candidatId, String candidatNom, String candidatEmail,
@@ -53,7 +42,8 @@ public final class Dtos {
                                  List<String> competences, String candidatDisponibilite,
                                  BigDecimal candidatPretention, Etape etape, String etapeLibelle, int score,
                                  String motifSortie, Integer noteGlobale, String synthese, AvisClient avisClient,
-                                 String commentaireClient, OffsetDateTime presenteLe, OffsetDateTime updatedAt) {
+                                 String commentaireClient, OffsetDateTime presenteLe, OffsetDateTime updatedAt,
+                                 EvaluationEntretienDto evaluationEntretien) {
         public static CandidatureDto of(Candidature c) {
             return new CandidatureDto(c.getId(), c.getMissionId(), c.getMissionIntitule(), c.getEntrepriseId(),
                     c.getEntrepriseNom(), c.getCandidatId(), c.getCandidatNom(), c.getCandidatEmail(),
@@ -61,7 +51,7 @@ public final class Dtos {
                     Dtos.competences(c.getCandidatCompetences()), c.getCandidatDisponibilite(), c.getCandidatPretention(),
                     c.getEtape(), c.getEtape().libelle(), c.getScore(), c.getMotifSortie(), c.getNoteGlobale(),
                     c.getSynthese(), c.getAvisClient(), c.getCommentaireClient(), c.getPresenteLe(),
-                    c.getUpdatedAt());
+                    c.getUpdatedAt(), EvaluationEntretienDto.of(c));
         }
     }
 
@@ -71,13 +61,23 @@ public final class Dtos {
                                     List<String> competences, String candidatDisponibilite,
                                     BigDecimal candidatPretention, Integer noteGlobale, String synthese,
                                     Etape etape, String etapeLibelle, AvisClient avisClient,
-                                    String commentaireClient, OffsetDateTime presenteLe) {
+                                    String commentaireClient, OffsetDateTime presenteLe,
+                                    EvaluationEntretienDto evaluationEntretien) {
         public static ProfilPresenteDto of(Candidature c) {
             return new ProfilPresenteDto(c.getId(), c.getMissionId(), c.getMissionIntitule(), c.getCandidatNom(),
                     c.getCandidatTitre(), c.getCandidatExperience(), c.getCandidatVille(),
                     Dtos.competences(c.getCandidatCompetences()), c.getCandidatDisponibilite(), c.getCandidatPretention(),
                     c.getNoteGlobale(), c.getSynthese(), c.getEtape(), c.getEtape().libelle(), c.getAvisClient(),
-                    c.getCommentaireClient(), c.getPresenteLe());
+                    c.getCommentaireClient(), c.getPresenteLe(), EvaluationEntretienDto.of(c));
+        }
+    }
+
+    /** Grille remplie par le client après l'entretien (reçue d'agenda-service), null s'il n'y en a pas. */
+    public record EvaluationEntretienDto(Integer technique, Integer communication, Integer motivation,
+                                         Integer adequationEquipe, String decision) {
+        static EvaluationEntretienDto of(Candidature c) {
+            return c.getEvalDecision() == null ? null : new EvaluationEntretienDto(c.getEvalTechnique(),
+                    c.getEvalCommunication(), c.getEvalMotivation(), c.getEvalEquipe(), c.getEvalDecision());
         }
     }
 
@@ -92,14 +92,14 @@ public final class Dtos {
         }
     }
 
-    public record EntretienDto(UUID id, UUID candidatureId, String missionIntitule, String entrepriseNom,
-                               String candidatNom, OffsetDateTime dateHeure, Entretien.Type type, String lieu,
-                               Entretien.Statut statut, String compteRendu) {
-        public static EntretienDto of(Entretien e) {
-            Candidature c = e.getCandidature();
-            return new EntretienDto(e.getId(), c.getId(), c.getMissionIntitule(), c.getEntrepriseNom(),
-                    c.getCandidatNom(), e.getDateHeure(), e.getType(), e.getLieu(), e.getStatut(),
-                    e.getCompteRendu());
+    /** Ce dont agenda-service a besoin pour organiser une réunion sur une candidature. */
+    public record ContexteReunionDto(UUID candidatureId, UUID missionId, String missionIntitule, UUID entrepriseId,
+                                     String entrepriseNom, String contactEmail, UUID candidatId, String candidatNom,
+                                     String candidatEmail, Etape etape) {
+        public static ContexteReunionDto of(Candidature c) {
+            return new ContexteReunionDto(c.getId(), c.getMissionId(), c.getMissionIntitule(), c.getEntrepriseId(),
+                    c.getEntrepriseNom(), c.getContactEmail(), c.getCandidatId(), c.getCandidatNom(),
+                    c.getCandidatEmail(), c.getEtape());
         }
     }
 
