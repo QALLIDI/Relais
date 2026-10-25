@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api } from '../../api/client';
 import { kmad, n } from '../../api/format';
 import type { FacturationStats, MissionStats, SelectionStats, VivierStats } from '../../api/types';
-import { Barre, Kpi } from '../../components/ui';
+import { Barre, Batons, Kpi, Vide } from '../../components/ui';
 
 export default function Statistiques() {
   const selection = useQuery({ queryKey: ['selection', 'stats'], queryFn: async () => (await api.get<SelectionStats>('/api/selection/stats')).data });
@@ -13,8 +12,8 @@ export default function Statistiques() {
 
   const entonnoir = selection.data?.entonnoir ?? [];
   const premier = entonnoir[0]?.nombre ?? 0;
-  const ca = (factu.data?.encaisseParMois ?? []).map((m) => ({ mois: m.mois, k: Math.round(Number(m.montant) / 1000) }));
-  const totalCa = ca.reduce((s, m) => s + m.k, 0);
+  const ca = (factu.data?.encaisseParMois ?? []).map((m) => ({ libelle: m.mois, valeur: Math.round(Number(m.montant) / 1000) }));
+  const totalCa = ca.reduce((s, m) => s + m.valeur, 0);
   const sources = Object.entries(vivier.data?.parSource ?? {}).sort((a, b) => b[1] - a[1]);
   const maxSource = Math.max(1, ...sources.map(([, v]) => v));
   const competences = missions.data?.competencesDemandees ?? [];
@@ -22,80 +21,77 @@ export default function Statistiques() {
 
   return (
     <>
-      <header className="header">
+      <section className="header">
         <div>
           <h1>Statistiques</h1>
-          <div className="muted">Toutes périodes confondues, sauf mention contraire</div>
+          <div className="sub">Toutes périodes confondues, sauf mention contraire</div>
         </div>
-      </header>
-
-      <section className="grid-auto" aria-label="Indicateurs clés">
-        <Kpi label="Placements" value={selection.data?.placements ?? '—'} />
-        <Kpi label="Délai moyen de placement" value={selection.data?.delaiMoyenPlacementJours ?? '—'} unit="jours" />
-        <Kpi label="Présentés → placés" value={selection.data?.tauxPresentesPlaces ?? '—'} unit="%" />
-        <Kpi label="CA encaissé sur 6 mois" value={n(totalCa)} unit="k MAD" />
-        <Kpi label="Délai moyen jusqu'à la shortlist" value={selection.data?.delaiMoyenShortlistJours ?? '—'} unit="jours" />
-        <Kpi label="Profils ajoutés ce mois" value={vivier.data?.ajoutesCeMois ?? '—'} note={`${vivier.data?.total ?? 0} profils dans le vivier`} />
+        <div className="kpis">
+          <Kpi label="Placements" value={selection.data?.placements ?? '—'} />
+          <Kpi label="Délai moyen de placement" value={selection.data?.delaiMoyenPlacementJours ?? '—'} unit="jours" />
+          <Kpi label="Présentés → placés" value={selection.data?.tauxPresentesPlaces ?? '—'} unit="%" />
+          <Kpi label="CA encaissé sur 6 mois" value={n(totalCa)} unit="k MAD" />
+        </div>
       </section>
 
       <div className="grid-2">
-        <section className="card stack">
-          <div>
-            <h2>Chiffre d'affaires encaissé par mois</h2>
-            <div className="muted small">en milliers de MAD HT · total {n(totalCa)}</div>
+        <section className="card">
+          <div className="card-head">
+            <h2>Chiffre d'affaires encaissé</h2>
+            <span className="muted small">k MAD HT · total {n(totalCa)}</span>
           </div>
-          <div style={{ width: '100%', height: 240 }}>
-            <ResponsiveContainer>
-              <BarChart data={ca} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                <CartesianGrid vertical={false} stroke="#ecece7" />
-                <XAxis dataKey="mois" tickLine={false} axisLine={{ stroke: '#b8b8b1' }} tick={{ fontSize: 12, fill: '#5b5f66' }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#5b5f66' }} />
-                <Tooltip formatter={(v) => [`${v} k MAD`, 'Encaissé']} cursor={{ fill: '#f1f1ec' }} />
-                <Bar dataKey="k" fill="#0b6b66" radius={[4, 4, 0, 0]} maxBarSize={48} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {ca.length ? <Batons donnees={ca} unite="k" label="CA encaissé par mois en milliers de MAD" /> : <Vide>Aucun encaissement.</Vide>}
         </section>
 
-        <section className="card stack">
-          <div>
+        <section className="card stack" style={{ gap: 14 }}>
+          <div className="card-head" style={{ margin: 0 }}>
             <h2>Entonnoir de pré-sélection</h2>
-            <div className="muted small">candidats ayant atteint chaque étape · {selection.data?.tauxPresentesPlaces ?? 0} % des présentés sont placés</div>
+            <span className="pill info">{selection.data?.tauxPresentesPlaces ?? 0} % des présentés placés</span>
           </div>
           {entonnoir.map((e, i) => {
-            const suivant = entonnoir[i + 1];
+            const precedent = entonnoir[i - 1];
+            const conv = precedent && precedent.nombre > 0 ? Math.round((e.nombre / precedent.nombre) * 100) : null;
             return (
-              <div key={e.etape} className="stack" style={{ gap: 2 }}>
-                <Barre label={e.libelle} valeur={e.nombre} max={premier} />
-                {suivant && e.nombre > 0 && (
-                  <div className="muted" style={{ fontSize: 11, paddingLeft: 182 }}>↓ {Math.round((suivant.nombre / e.nombre) * 100)} % passent à l'étape suivante</div>
-                )}
+              <div key={e.etape} style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 150px) 1fr 36px 48px', gap: 12, alignItems: 'center', fontSize: 14 }}
+                title={`${e.libelle} : ${e.nombre} candidat(s)`}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.libelle}</span>
+                <div className="barre" style={{ height: 22 }}>
+                  <div style={{ width: `${premier ? Math.round((e.nombre / premier) * 100) : 0}%`, background: i === entonnoir.length - 1 ? 'var(--accent)' : 'var(--ink)' }} />
+                </div>
+                <b className="mono" style={{ textAlign: 'right' }}>{e.nombre}</b>
+                <span className="muted small" style={{ textAlign: 'right' }}>{conv != null ? `${conv} %` : ''}</span>
               </div>
             );
           })}
+          <div className="muted small">Candidats ayant atteint chaque étape ; à droite, la part passée depuis l'étape précédente.</div>
         </section>
       </div>
 
-      <div className="grid-2">
+      <div className="grid-3">
         <section className="card">
           <h2 style={{ marginBottom: 12 }}>Placements et CA par client</h2>
-          <table>
-            <thead><tr><th>Client</th><th className="num">Placés</th><th className="num">Facturé (k MAD)</th></tr></thead>
-            <tbody>
-              {factu.data?.parClient.map((c) => (
-                <tr key={c.entreprise}><td>{c.entreprise}</td><td className="num">{c.placements}</td><td className="num">{kmad(Number(c.montantHt))}</td></tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Client</th><th className="num">Placés</th><th className="num">Facturé (k MAD)</th></tr></thead>
+              <tbody>
+                {factu.data?.parClient.map((c) => (
+                  <tr key={c.entreprise}><td>{c.entreprise}</td><td className="num">{c.placements}</td><td className="num">{kmad(Number(c.montantHt))}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
-        <section className="card stack" style={{ gap: 10 }}>
-          <h2>Origine des profils du vivier</h2>
+        <section className="card stack" style={{ gap: 12 }}>
+          <div>
+            <h2>Origine des profils</h2>
+            <div className="muted small">{vivier.data?.total ?? 0} profils · {vivier.data?.ajoutesCeMois ?? 0} ajoutés ce mois</div>
+          </div>
           {sources.map(([s, v]) => <Barre key={s} label={s} valeur={v} max={maxSource} />)}
         </section>
-        <section className="card stack" style={{ gap: 10 }}>
+        <section className="card stack" style={{ gap: 12 }}>
           <div>
             <h2>Compétences les plus demandées</h2>
-            <div className="muted small">nombre de missions qui les exigent</div>
+            <div className="muted small">nombre de missions qui les exigent · shortlist en {selection.data?.delaiMoyenShortlistJours ?? '—'} j en moyenne</div>
           </div>
           {competences.map((c) => <Barre key={c.competence} label={c.competence} valeur={c.missions} max={maxComp} />)}
         </section>

@@ -2,9 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { api, messageErreur } from '../../api/client';
-import { dateFr, libelleStatutMission, mad } from '../../api/format';
+import { dateCourte, initiales, libelleStatutMission, mad } from '../../api/format';
 import type { Candidature, Etape, Mission, Pipeline, Suggestion } from '../../api/types';
-import { Chargement, Erreur, Modal, Pill, Score, Tags, toneMission } from '../../components/ui';
+import { Chargement, Erreur, Kpi, Modal, Pill, Score, Tags, teinte, toneMission } from '../../components/ui';
 
 type Dialogue =
   | { type: 'sortie'; candidature: Candidature; etape: Etape }
@@ -64,33 +64,38 @@ export default function PipelinePage() {
 
   const m = mission.data;
   const erreur = deplacer.error ?? ajouter.error ?? shortlist.error;
+  const colonnes = pipeline.data?.colonnes ?? [];
+  const total = colonnes.reduce((s, col) => s + col.candidatures.length, 0);
+  const presentes = colonnes.find((col) => col.etape === 'PRESENTE')?.candidatures ?? [];
+  const enAttente = presentes.filter((c) => !c.avisClient).length;
 
   return (
     <>
-      <div className="muted small"><Link to="/recruteur/missions">Missions</Link> / {m?.entrepriseNom}</div>
       {m && (
-        <header className="header" style={{ alignItems: 'flex-start' }}>
-          <div className="stack" style={{ gap: 8 }}>
-            <div className="actions">
-              <h1 style={{ fontSize: 26 }}>{m.intitule}</h1>
+        <section className="header">
+          <div className="stack" style={{ gap: 10 }}>
+            <div className="crumbs">
+              <Link to="/recruteur/missions">Missions</Link><span>/</span><span>{m.entrepriseNom}</span>
+              {m.priorite === 'Haute' && <Pill tone="info">Priorité haute</Pill>}
               <Pill tone={toneMission(m.statut)}>{libelleStatutMission[m.statut]}</Pill>
             </div>
-            <div className="muted">
-              {[m.entrepriseNom, m.typeContrat, m.ville, m.teletravail, m.experienceMin != null ? `${m.experienceMin} ans et plus` : null,
-                m.salaireMax ? `${mad(m.salaireMin)} – ${mad(m.salaireMax)} brut/an` : null, m.dateLimite ? `échéance ${dateFr(m.dateLimite)}` : null]
-                .filter(Boolean).join(' · ')}
+            <h1>{m.intitule}</h1>
+            <div className="chips">
+              {[m.typeContrat, [m.ville, m.teletravail?.toLowerCase()].filter(Boolean).join(' · '), m.experienceMin != null ? `${m.experienceMin} ans et plus` : null,
+                m.salaireMax ? `${mad(m.salaireMin)} – ${mad(m.salaireMax)}` : null].filter(Boolean).map((x) => <span key={x} className="chip">{x}</span>)}
+              {m.competencesRequises.map((c) => <span key={c} className="chip dark">{c}</span>)}
+              {m.competencesSouhaitees.map((c) => <span key={c} className="chip">{c} (souhaité)</span>)}
             </div>
-            <Tags items={[...m.competencesRequises, ...m.competencesSouhaitees.map((c) => `${c} (souhaité)`)]} />
           </div>
-          <div className="actions">
-            <button className="btn" onClick={() => setVoirSuggestions((v) => !v)}>
-              {voirSuggestions ? 'Masquer les suggestions' : 'Suggestions du vivier'}
-            </button>
-            <button className="btn primary" disabled={selection.length === 0 || shortlist.isPending} onClick={() => shortlist.mutate()}>
-              Envoyer la shortlist ({selection.length})
+          <div className="kpis" style={{ alignItems: 'flex-end', gap: 36 }}>
+            <Kpi label="Dans le pipeline" value={total} />
+            <Kpi label="Présentés" value={presentes.length} note={enAttente ? 'en attente' : undefined} tone={enAttente ? 'warn' : undefined} />
+            <Kpi label="Échéance" value={m.dateLimite ? dateCourte(m.dateLimite) : '—'} />
+            <button className="btn" onClick={() => setVoirSuggestions((v) => !v)} aria-expanded={voirSuggestions}>
+              <span className="dot" />{voirSuggestions ? 'Masquer les suggestions' : 'Suggestions du vivier'}
             </button>
           </div>
-        </header>
+        </section>
       )}
       {erreur && <Erreur message={messageErreur(erreur)} />}
 
@@ -100,14 +105,15 @@ export default function PipelinePage() {
           {suggestions.isLoading && <Chargement />}
           {suggestions.data?.length === 0 && <p className="muted">Tous les profils du vivier sont déjà dans le pipeline.</p>}
           {suggestions.data?.map((s) => (
-            <div key={s.candidatId} className="list-item">
-              <div className="stack" style={{ gap: 4 }}>
-                <span><Link to={`/recruteur/vivier/${s.candidatId}`} style={{ fontWeight: 600, color: 'var(--ink)' }}>{s.nomComplet}</Link> <span className="muted small">{s.titre} · {s.anneesExperience} ans · {s.ville} · {s.disponibilite}</span></span>
+            <div key={s.candidatId} className="tile">
+              <span className="avatar" aria-hidden="true">{initiales(s.nomComplet)}</span>
+              <div className="stack" style={{ gap: 4, flex: '1 1 260px', minWidth: 0 }}>
+                <span><Link to={`/recruteur/vivier/${s.candidatId}`} style={{ fontWeight: 600 }}>{s.nomComplet}</Link> <span className="muted small">{s.titre} · {s.anneesExperience} ans · {s.ville} · {s.disponibilite}</span></span>
                 <Tags items={s.competences} />
               </div>
               <div className="actions">
                 <Score value={s.score} />
-                <button className="btn small" disabled={ajouter.isPending} onClick={() => ajouter.mutate(s.candidatId)}>Ajouter</button>
+                <button className="btn small primary" disabled={ajouter.isPending} onClick={() => ajouter.mutate(s.candidatId)}>Ajouter</button>
               </div>
             </div>
           ))}
@@ -117,49 +123,60 @@ export default function PipelinePage() {
       {pipeline.isLoading && <Chargement />}
       <div className="table-wrap" style={{ paddingBottom: 8 }}>
         <div className="kanban">
-          {pipeline.data?.colonnes.map((col) => (
+          {colonnes.map((col) => (
             <section
               key={col.etape}
-              className={`colonne ${survol === col.etape ? 'survol' : ''}`}
+              className={`colonne ${col.etape === 'PRESENTE' ? 'chaude' : ''} ${col.etape === 'PLACE' && col.candidatures.length === 0 ? 'fin' : ''} ${survol === col.etape ? 'survol' : ''}`}
               onDragOver={(e) => { e.preventDefault(); setSurvol(col.etape); }}
               onDragLeave={() => setSurvol(null)}
               onDrop={(e) => lacher(col.etape, e.dataTransfer.getData('text/plain'))}
               aria-label={col.libelle}
             >
-              <h3>{col.libelle}<span className="mono muted">{col.candidatures.length}</span></h3>
-              {col.candidatures.map((c) => (
-                <article
-                  key={c.id}
-                  className={`carte ${selection.includes(c.id) ? 'selection' : ''}`}
-                  draggable
-                  onDragStart={(e) => e.dataTransfer.setData('text/plain', c.id)}
-                >
-                  <div className="row" style={{ justifyContent: 'space-between', gap: 8, flexWrap: 'nowrap' }}>
-                    <div>
-                      <Link to={`/recruteur/vivier/${c.candidatId}`} style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)' }}>{c.candidatNom}</Link>
-                      <div className="muted small">{c.candidatTitre} · {c.candidatExperience} ans</div>
+              <h3>{col.libelle}<span className="compteur">{col.candidatures.length}</span></h3>
+              {col.candidatures.map((c, i) => {
+                const choisi = selection.includes(c.id);
+                return (
+                  <article
+                    key={c.id}
+                    className={`carte ${choisi ? 'selection' : ''}`}
+                    draggable
+                    onDragStart={(e) => e.dataTransfer.setData('text/plain', c.id)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span className={`avatar ${teinte(i)}`} aria-hidden="true">{initiales(c.candidatNom)}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Link to={`/recruteur/vivier/${c.candidatId}`} style={{ fontWeight: 600, fontSize: 15, textDecoration: 'none' }}>{c.candidatNom}</Link>
+                        <div className="muted small">{c.candidatTitre} · {c.candidatExperience} ans</div>
+                      </div>
+                      <Score value={c.score} />
                     </div>
-                    <Score value={c.score} />
-                  </div>
-                  <Tags items={c.competences.slice(0, 3)} />
-                  {c.noteGlobale && <div className="small">Évaluation : <b>{c.noteGlobale}/5</b></div>}
-                  {c.avisClient && <div className="small" style={{ color: c.avisClient === 'REFUSE' ? 'var(--bad)' : 'var(--ok)' }}>Client : {c.avisClient === 'A_RENCONTRER' ? 'à rencontrer' : c.avisClient === 'RETENU' ? 'retenu' : 'refusé'}</div>}
-                  {c.etape === 'PRESENTE' && !c.avisClient && <div className="small" style={{ color: 'var(--warn)' }}>En attente du retour client</div>}
-                  <div className="actions" style={{ gap: 4 }}>
-                    {SHORTLISTABLES.includes(c.etape) && (
-                      <label className="check small"><input type="checkbox" checked={selection.includes(c.id)} onChange={() => basculer(c.id)} /> Shortlist</label>
-                    )}
-                    <button className="btn small" onClick={() => setDialogue({ type: 'evaluation', candidature: c })}>Évaluer</button>
-                    <button className="btn small" onClick={() => setDialogue({ type: 'entretien', candidature: c })}>Entretien</button>
-                    <button className="btn small danger" onClick={() => setDialogue({ type: 'sortie', candidature: c, etape: 'REFUSE' })}>Refuser</button>
-                  </div>
-                </article>
-              ))}
+                    <Tags items={c.competences.slice(0, 3)} />
+                    {c.noteGlobale && <div className="small">Évaluation : <b>{c.noteGlobale}/5</b></div>}
+                    {c.avisClient && <div className="small" style={{ color: c.avisClient === 'REFUSE' ? 'var(--bad)' : 'var(--ok)' }}>Client : {c.avisClient === 'A_RENCONTRER' ? 'à rencontrer' : c.avisClient === 'RETENU' ? 'retenu' : 'refusé'}</div>}
+                    {c.etape === 'PRESENTE' && !c.avisClient && <div className="small" style={{ color: 'var(--warn)' }}>En attente du retour client</div>}
+                    <div className="actions" style={{ gap: 4 }}>
+                      {SHORTLISTABLES.includes(c.etape) && (
+                        <button className={`btn small ${choisi ? 'on' : ''}`} aria-pressed={choisi} onClick={() => basculer(c.id)}>
+                          {choisi ? 'Dans la shortlist' : '+ Shortlist'}
+                        </button>
+                      )}
+                      <button className="btn small" onClick={() => setDialogue({ type: 'evaluation', candidature: c })}>Évaluer</button>
+                      <button className="btn small" onClick={() => setDialogue({ type: 'entretien', candidature: c })}>Entretien</button>
+                      <button className="btn small danger" onClick={() => setDialogue({ type: 'sortie', candidature: c, etape: 'REFUSE' })}>Refuser</button>
+                    </div>
+                  </article>
+                );
+              })}
             </section>
           ))}
         </div>
       </div>
-      <p className="muted small">Glissez une carte d'une colonne à l'autre pour changer son étape. Cochez les profils qualifiés pour composer une shortlist.</p>
+      <p className="muted small" style={{ margin: 0 }}>Glissez une carte d'une colonne à l'autre pour changer son étape. Ajoutez les profils qualifiés à la shortlist, puis envoyez-la au client.</p>
+
+      <div className="barre-flottante" role="region" aria-label="Shortlist">
+        <span className="small">{selection.length} profil(s) sélectionné(s)</span>
+        <button className="btn accent" disabled={selection.length === 0 || shortlist.isPending} onClick={() => shortlist.mutate()}>Envoyer la shortlist</button>
+      </div>
 
       {pipeline.data && pipeline.data.sorties.length > 0 && (
         <section className="card">
@@ -230,7 +247,7 @@ function DialogueEvaluation({ c, onClose, onFait }: { c: Candidature; onClose: (
     <Modal titre={`Évaluation de ${c.candidatNom}`} onClose={onClose}>
       <label className="field">Note globale (1 à 5)
         <input type="range" min={1} max={5} value={note} onChange={(e) => setNote(Number(e.target.value))} />
-        <span className="mono">{note} / 5</span>
+        <span style={{ fontSize: 20, fontWeight: 500 }}>{note} / 5</span>
       </label>
       <label className="field">Synthèse (visible du client dans la shortlist)
         <textarea rows={4} value={synthese} onChange={(e) => setSynthese(e.target.value)} />

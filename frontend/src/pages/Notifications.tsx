@@ -28,9 +28,9 @@ export default function Notifications() {
               <div className="muted">{n.message}</div>
               <div className="small muted">{dateHeureFr(n.createdAt)}</div>
             </div>
-            {!n.lu && (
+            {!n.lu ? (
               <button className="btn small" onClick={() => lire.mutate(n.id)}>Marquer comme lue</button>
-            )}
+            ) : <span className="pill neutral">Lue</span>}
           </div>
         ))}
       </section>

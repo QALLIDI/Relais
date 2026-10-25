@@ -26,12 +26,14 @@ export default function NouveauBesoin() {
 
   return (
     <main className="page">
+      <section className="header">
+        <div>
+          <h1>Nouveau besoin</h1>
+          <div className="sub">Décrivez le poste ; votre recruteur le valide avec vous avant de lancer la recherche.</div>
+        </div>
+      </section>
       <div className="row">
         <form className="card stack grow-main" onSubmit={soumettre}>
-          <div>
-            <h1 style={{ fontSize: 26 }}>Exprimer un nouveau besoin</h1>
-            <p className="muted" style={{ margin: '6px 0 0' }}>Décrivez le poste ; votre recruteur le valide avec vous avant de lancer la recherche.</p>
-          </div>
           {envoye && <div className="alert info">Besoin envoyé. Votre recruteur revient vers vous pour le valider.</div>}
           <label className="field">Intitulé du poste<input required value={f.intitule} onChange={maj('intitule')} /></label>
           <label className="field">Missions principales<textarea rows={4} value={f.description} onChange={maj('description')} /></label>
@@ -47,7 +49,7 @@ export default function NouveauBesoin() {
           </div>
           {envoyer.error && <Erreur message={messageErreur(envoyer.error)} />}
           <div className="actions" style={{ justifyContent: 'flex-end' }}>
-            <button type="submit" className="btn primary" disabled={envoyer.isPending}>Envoyer à mon recruteur</button>
+            <button type="submit" className="btn accent" disabled={envoyer.isPending}>Envoyer à mon recruteur</button>
           </div>
         </form>
         <aside className="card grow-side" aria-label="Mes besoins">

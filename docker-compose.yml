@@ -100,6 +100,7 @@ services:
       - "8180:8080"
     volumes:
       - ./infra/keycloak/realm-recrutement.json:/opt/keycloak/data/import/realm-recrutement.json:ro
+      - ./infra/keycloak/themes/recrut:/opt/keycloak/themes/recrut:ro
     depends_on:
       postgres:
         condition: service_healthy

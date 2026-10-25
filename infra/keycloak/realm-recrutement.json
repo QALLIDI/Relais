@@ -2,6 +2,7 @@
   "realm": "recrutement",
   "displayName": "Plateforme de recrutement",
   "enabled": true,
+  "loginTheme": "recrut",
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,
   "loginWithEmailAllowed": true,

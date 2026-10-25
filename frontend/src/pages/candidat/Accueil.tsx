@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { Link } from 'react-router';
 import { api, messageErreur } from '../../api/client';
-import { dateHeureFr } from '../../api/format';
+import { dateCourte, dateHeureFr, initiales } from '../../api/format';
 import type { Candidat, Entretien, MaCandidature } from '../../api/types';
 import { Chargement, Erreur, Progression, Vide } from '../../components/ui';
 
@@ -40,9 +40,9 @@ export default function CandidatAccueil() {
     return (
       <main className="page narrow">
         <div className="card stack">
-          <h1 style={{ fontSize: 24 }}>Bienvenue</h1>
+          <h1 style={{ fontSize: 34 }}>Bienvenue</h1>
           <p className="muted">Créez votre profil pour que le cabinet puisse vous proposer des postes qui vous correspondent.</p>
-          <Link className="btn primary" to="/candidat/profil">Créer mon profil</Link>
+          <Link className="btn accent" to="/candidat/profil" style={{ alignSelf: 'flex-start' }}>Créer mon profil</Link>
         </div>
       </main>
     );
@@ -50,43 +50,59 @@ export default function CandidatAccueil() {
   const c = profil.data;
   const comp = c ? completude(c) : null;
   const aConfirmer = entretiens.data?.filter((e) => e.statut === 'PROPOSE') ?? [];
+  const arc = 2 * Math.PI * 16;
 
   return (
     <main className="page narrow">
-      <header>
-        <div className="muted">Bonjour</div>
-        <h1 style={{ fontSize: 24 }}>{c?.nomComplet}</h1>
+      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div>
+          <div className="muted">Bonjour</div>
+          <h1 style={{ fontSize: 34 }}>{c?.nomComplet}</h1>
+        </div>
+        <span style={{ width: 52, height: 52, borderRadius: '50%', background: 'radial-gradient(circle at 30% 30%, #FFB38A, #C9501E)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }} aria-hidden="true">
+          {initiales(c?.nomComplet ?? '')}
+        </span>
       </header>
       {confirmer.error && <Erreur message={messageErreur(confirmer.error)} />}
 
       {comp && (
-        <section className="card stack" style={{ gap: 10 }}>
-          <div className="header"><b>Profil complété</b><b style={{ color: 'var(--teal)' }}>{comp.pct} %</b></div>
-          <div className="barre" style={{ height: 8 }}><div style={{ width: `${comp.pct}%` }} /></div>
-          {comp.manque && <div className="header small"><span className="muted">Ajoutez {comp.manque} pour finir.</span><Link to="/candidat/profil">Compléter</Link></div>}
+        <section className="card" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 16, borderRadius: 24 }}>
+          <svg width="64" height="64" viewBox="0 0 42 42" role="img" aria-label={`Profil complété à ${comp.pct} %`}>
+            <circle cx="21" cy="21" r="16" fill="none" stroke="var(--line)" strokeWidth="5" />
+            <circle cx="21" cy="21" r="16" fill="none" stroke="var(--accent)" strokeWidth="5" strokeLinecap="round" strokeDasharray={`${(arc * comp.pct) / 100} ${arc}`} transform="rotate(-90 21 21)" />
+            <text x="21" y="24.5" textAnchor="middle" fontSize="9" fill="var(--ink)">{comp.pct} %</text>
+          </svg>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 600 }}>{comp.pct === 100 ? 'Profil complet' : comp.pct >= 70 ? 'Profil presque complet' : 'Profil à compléter'}</div>
+            {comp.manque && <div className="muted small">Ajoutez {comp.manque} pour finir.</div>}
+            {comp.manque && <Link to="/candidat/profil" className="small" style={{ display: 'inline-block', marginTop: 6, color: 'var(--accent-ink)', fontWeight: 600 }}>Compléter</Link>}
+          </div>
         </section>
       )}
 
       {aConfirmer.map((e) => (
-        <section key={e.id} className="card stack" style={{ background: 'var(--teal-soft)', border: 0 }}>
-          <div className="small" style={{ fontWeight: 600, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.04em' }}>Entretien à confirmer</div>
-          <div style={{ fontWeight: 600 }}>{e.entrepriseNom} · {e.missionIntitule}</div>
-          <div>{dateHeureFr(e.dateHeure)} · {e.lieu}</div>
-          <div className="actions">
-            <button className="btn primary" onClick={() => confirmer.mutate({ id: e.id, confirme: true })}>Confirmer</button>
-            <button className="btn" onClick={() => confirmer.mutate({ id: e.id, confirme: false })}>Décliner</button>
+        <section key={e.id} className="card accent stack" style={{ gap: 10, borderRadius: 24, padding: 18 }}>
+          <div className="card-head" style={{ margin: 0 }}>
+            <span className="pill veil">Entretien à confirmer</span>
+            <span className="small">{dateCourte(e.dateHeure)}</span>
+          </div>
+          <div style={{ fontSize: 22, lineHeight: 1.15 }}>{e.entrepriseNom}<br />{e.missionIntitule}</div>
+          <div className="small">{dateHeureFr(e.dateHeure)} · {e.lieu ?? 'lieu à préciser'}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <button className="btn light" onClick={() => confirmer.mutate({ id: e.id, confirme: true })}>Confirmer</button>
+            <button className="btn" style={{ background: '#17181c', color: '#fff' }} onClick={() => confirmer.mutate({ id: e.id, confirme: false })}>Décliner</button>
           </div>
         </section>
       ))}
 
-      <section className="card stack">
+      <section className="card stack" style={{ borderRadius: 24, gap: 14 }}>
         <h2>Mes candidatures</h2>
         {candidatures.data?.length === 0 && <Vide>Aucune candidature en cours. Le cabinet vous contacte dès qu'un poste vous correspond.</Vide>}
-        {candidatures.data?.map((x) => (
-          <div key={x.id} className="stack" style={{ gap: 6, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-            <div className="header"><b>{x.missionIntitule}</b><span className="muted small">{x.entreprise}</span></div>
-            {x.etapeNumero > 0 ? <Progression etape={x.etapeNumero} total={x.etapesTotal} /> : null}
-            <div className="small" style={{ color: x.etapeNumero === 0 ? 'var(--muted)' : undefined }}>
+        {candidatures.data?.map((x, i) => (
+          <div key={x.id} className="stack" style={{ gap: 8, borderTop: i ? '1px solid var(--line)' : 0, paddingTop: i ? 14 : 0 }}>
+            <div className="card-head" style={{ margin: 0 }}><b style={{ fontWeight: 600 }}>{x.missionIntitule}</b><span className="muted small">{x.entreprise}</span></div>
+            {x.etapeNumero > 0 ? <Progression etape={x.etapeNumero} total={x.etapesTotal} enCours={x.etapeNumero < x.etapesTotal} /> : null}
+            <div className="small" style={{ color: x.etapeNumero === 0 ? 'var(--muted)' : 'var(--ink-2)' }}>
               {x.etapeNumero > 0 ? `${x.etapeLibelle} · étape ${x.etapeNumero} sur ${x.etapesTotal}` : 'Candidature close'}
             </div>
           </div>

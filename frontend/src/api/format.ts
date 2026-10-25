@@ -1,12 +1,20 @@
 const nombre = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
 const date = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-const jourHeure = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const jourMois = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' });
+const jourHeure =new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 export const mad = (v?: number | null) => (v == null ? '—' : `${nombre.format(v)} MAD`);
 export const n = (v?: number | null) => (v == null ? '—' : nombre.format(v));
 export const kmad = (v?: number | null) => (v == null ? '—' : nombre.format(Math.round(v / 1000)));
 export const dateFr = (v?: string | null) => (v ? date.format(new Date(v)) : '—');
 export const dateHeureFr = (v?: string | null) => (v ? jourHeure.format(new Date(v)) : '—');
+export const dateCourte = (v?: string | null) => (v ? jourMois.format(new Date(v)) : '—');
+
+export const libelleNiveau: Record<string, string> = {
+  JUNIOR: 'Junior',
+  CONFIRME: 'Confirmé',
+  SENIOR: 'Senior',
+};
 
 export const libelleStatutMission: Record<string, string> = {
   EN_VALIDATION: 'En validation',

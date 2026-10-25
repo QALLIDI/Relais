@@ -18,10 +18,13 @@ export default function Entreprises() {
 
   return (
     <>
-      <header className="header">
-        <h1>Entreprises clientes</h1>
-        <button className="btn primary" onClick={() => setOuvert(true)}>Nouvelle entreprise</button>
-      </header>
+      <section className="header">
+        <div>
+          <h1>Entreprises clientes</h1>
+          <div className="sub">{entreprises.data ? `${entreprises.data.length} entreprise(s)` : ''}</div>
+        </div>
+        <button className="btn accent" onClick={() => setOuvert(true)}>Nouvelle entreprise</button>
+      </section>
       <section className="card">
         {entreprises.isLoading && <Chargement />}
         <div className="table-wrap">

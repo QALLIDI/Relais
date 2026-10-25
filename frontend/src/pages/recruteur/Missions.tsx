@@ -22,17 +22,22 @@ export default function Missions() {
 
   return (
     <>
-      <header className="header">
-        <h1>Missions</h1>
-        <Link className="btn primary" to="/recruteur/missions/nouvelle">Nouvelle mission</Link>
-      </header>
-      <div className="tabs" role="group" aria-label="Filtrer par statut">
-        {FILTRES.map((f) => (
-          <button key={f} className={`tab ${filtre === f ? 'on' : ''}`} aria-pressed={filtre === f} onClick={() => setFiltre(f)}>
-            {f === 'TOUTES' ? 'Toutes' : libelleStatutMission[f]}
-          </button>
-        ))}
-      </div>
+      <section className="header">
+        <div>
+          <h1>Missions</h1>
+          <div className="sub">{missions.data ? `${liste.length} mission(s) affichée(s) sur ${missions.data.length}` : ''}</div>
+        </div>
+        <div className="actions">
+          <div className="tabs" role="group" aria-label="Filtrer par statut">
+            {FILTRES.map((f) => (
+              <button key={f} className={`tab ${filtre === f ? 'on' : ''}`} aria-pressed={filtre === f} onClick={() => setFiltre(f)}>
+                {f === 'TOUTES' ? 'Toutes' : libelleStatutMission[f]}
+              </button>
+            ))}
+          </div>
+          <Link className="btn accent" to="/recruteur/missions/nouvelle">Nouvelle mission</Link>
+        </div>
+      </section>
       {statut.error && <Erreur message={messageErreur(statut.error)} />}
       <section className="card">
         {missions.isLoading && <Chargement />}
@@ -45,7 +50,7 @@ export default function Missions() {
               {liste.map((m) => (
                 <tr key={m.id}>
                   <td>
-                    <Link to={`/recruteur/missions/${m.id}`} style={{ color: 'var(--ink)', fontWeight: 600 }}>{m.intitule}</Link>
+                    <Link to={`/recruteur/missions/${m.id}`} style={{ fontWeight: 600 }}>{m.intitule}</Link>
                     <div className="muted small">{[m.typeContrat, m.ville, m.teletravail].filter(Boolean).join(' · ')}</div>
                   </td>
                   <td>{m.entrepriseNom}</td>

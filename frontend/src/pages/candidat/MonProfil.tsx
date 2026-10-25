@@ -47,7 +47,7 @@ export default function MonProfil() {
   return (
     <main className="page" style={{ maxWidth: 960 }}>
       <header className="header">
-        <h1 style={{ fontSize: 26 }}>{c ? 'Mon profil et mon CV' : 'Créer mon profil'}</h1>
+        <h1 style={{ fontSize: 34 }}>{c ? 'Mon profil et mon CV' : 'Créer mon profil'}</h1>
         {c && <button className="btn" onClick={() => navigate('/candidat')}>Retour à l'accueil</button>}
       </header>
       {enregistre && <div className="alert info">Profil enregistré.</div>}

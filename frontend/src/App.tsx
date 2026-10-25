@@ -3,7 +3,7 @@ import { Navigate, Route, Routes } from 'react-router';
 import { hasAuthParams, useAuth } from 'react-oidc-context';
 import { setTokenProvider } from './api/client';
 import { lireSession } from './auth/auth';
-import { EspaceLayout, RecruteurLayout } from './components/Layouts';
+import { CandidatLayout, EntrepriseLayout, RecruteurLayout } from './components/Layouts';
 import Dashboard from './pages/recruteur/Dashboard';
 import Missions from './pages/recruteur/Missions';
 import NouvelleMission from './pages/recruteur/NouvelleMission';
@@ -78,42 +78,19 @@ export default function App() {
         </Route>
       )}
       {session.roles.includes('ENTREPRISE') && (
-        <Route
-          path="/entreprise"
-          element={
-            <EspaceLayout
-              titre="Espace entreprise"
-              liens={[
-                { to: '/entreprise', label: 'Mes recrutements', end: true },
-                { to: '/entreprise/besoin', label: 'Nouveau besoin' },
-                { to: '/entreprise/factures', label: 'Factures' },
-                { to: '/entreprise/notifications', label: 'Notifications' },
-              ]}
-            />
-          }
-        >
+        <Route path="/entreprise" element={<EntrepriseLayout />}>
           <Route index element={<EntrepriseAccueil />} />
           <Route path="besoin" element={<NouveauBesoin />} />
           <Route path="shortlist/:missionId" element={<Shortlist />} />
           <Route path="factures" element={<FacturesClient />} />
-          <Route path="notifications" element={<div className="page"><Notifications /></div>} />
+          <Route path="notifications" element={<main className="page"><Notifications /></main>} />
         </Route>
       )}
       {session.roles.includes('CANDIDAT') && (
-        <Route
-          path="/candidat"
-          element={
-            <EspaceLayout
-              titre="Espace candidat"
-              liens={[
-                { to: '/candidat', label: 'Accueil', end: true },
-                { to: '/candidat/profil', label: 'Mon profil et CV' },
-              ]}
-            />
-          }
-        >
+        <Route path="/candidat" element={<CandidatLayout />}>
           <Route index element={<CandidatAccueil />} />
           <Route path="profil" element={<MonProfil />} />
+          <Route path="notifications" element={<main className="page narrow"><Notifications /></main>} />
         </Route>
       )}
       <Route path="*" element={<Navigate to={accueil} replace />} />

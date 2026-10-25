@@ -103,3 +103,9 @@ Les services exposent déjà `/actuator/prometheus` (Micrometer) et Keycloak a `
 - Les comptes entreprise se créent dans la console Keycloak (rôle ENTREPRISE + attribut `entrepriseId`).
 - Pas encore de tests d'intégration (Testcontainers) ni de file d'erreurs RabbitMQ dédiée.
 - Front : CSS maison et glisser-déposer natif HTML5 (pas de Tailwind ni dnd-kit pour l'instant).
+
+## Interface (maquettes « Ember »)
+
+Le front suit les maquettes « Ember » : police Outfit, cartes très arrondies, accent orange. Toutes les couleurs sont des variables CSS dans `frontend/src/styles.css`. Le mode sombre suit le réglage du système ; le bouton lune/soleil de l'en-tête force un thème et le mémorise dans le navigateur.
+
+La page de connexion Keycloak utilise le thème `recrut` (`infra/keycloak/themes/recrut`, CSS seulement, basé sur le thème `keycloak`). Il est déclaré dans le realm importé. Sur une base Keycloak déjà créée, l'import ne se rejoue pas : choisir `recrut` dans la console (Realm settings → Themes → Login theme) ou repartir de zéro avec `docker compose down -v`.

@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { api, messageErreur } from '../../api/client';
-import { listeDepuisTexte } from '../../api/format';
+import { listeDepuisTexte, mad } from '../../api/format';
 import type { Entreprise, Mission, MissionRequest } from '../../api/types';
 import { Erreur } from '../../components/ui';
 
@@ -44,44 +44,67 @@ export default function NouvelleMission() {
     creer.mutate(statut);
   };
 
+  const client = entreprises.data?.find((e) => e.id === f.entrepriseId);
+  const requises = listeDepuisTexte(f.requises);
+
   return (
     <>
-      <h1>Nouvelle mission</h1>
-      <form className="stack" onSubmit={soumettre('OUVERTE')} style={{ maxWidth: 960 }}>
+      <section className="header">
+        <div>
+          <div className="crumbs"><Link to="/recruteur/missions">Missions</Link><span>/</span><span>Nouvelle</span></div>
+          <h1>Nouvelle mission</h1>
+        </div>
+        <div className="actions">
+          <button type="button" className="btn" disabled={creer.isPending} onClick={() => soumettre('BROUILLON')()}>Enregistrer en brouillon</button>
+          <button type="submit" form="nouvelle-mission" className="btn accent" disabled={creer.isPending}>Ouvrir la mission</button>
+        </div>
+      </section>
+      {creer.error && <Erreur message={messageErreur(creer.error)} />}
+      <form id="nouvelle-mission" className="grid-2" onSubmit={soumettre('OUVERTE')} style={{ alignItems: 'start' }}>
         <section className="card stack">
-          <h2>1. Client</h2>
+          <h2><span className="step">1</span>Client</h2>
           <label className="field">Entreprise
             <select required value={f.entrepriseId} onChange={maj('entrepriseId')}>
               <option value="">Choisir une entreprise…</option>
               {entreprises.data?.map((e) => <option key={e.id} value={e.id}>{e.raisonSociale}</option>)}
             </select>
           </label>
+          <div className="box small" style={{ color: 'var(--ink-2)' }}>
+            {client
+              ? `Honoraires repris du contrat : ${client.tauxHonoraires ?? '—'} % du salaire annuel${client.acompte ? `, acompte de ${mad(client.acompte)}` : ''}.`
+              : 'Les honoraires sont repris des conditions tarifaires du client.'}
+          </div>
         </section>
         <section className="card stack">
-          <h2>2. Poste</h2>
+          <h2><span className="step">2</span>Poste</h2>
           <label className="field">Intitulé<input required value={f.intitule} onChange={maj('intitule')} placeholder="Développeur Java senior" /></label>
           <div className="form-grid">
             <label className="field">Contrat
               <select value={f.typeContrat} onChange={maj('typeContrat')}><option>CDI</option><option>CDD</option><option>Freelance</option></select>
             </label>
             <label className="field">Ville<input value={f.ville} onChange={maj('ville')} /></label>
-            <label className="field">Télétravail
-              <select value={f.teletravail} onChange={maj('teletravail')}><option>Hybride</option><option>Sur site</option><option>Total</option></select>
-            </label>
             <label className="field">Postes<input type="number" min={1} value={f.nbPostes} onChange={maj('nbPostes')} /></label>
+          </div>
+          <div className="field">Télétravail
+            <div className="tabs" role="group" aria-label="Télétravail" style={{ alignSelf: 'flex-start' }}>
+              {['Sur site', 'Hybride', 'Total'].map((t) => (
+                <button key={t} type="button" className={`tab ${f.teletravail === t ? 'on' : ''}`} aria-pressed={f.teletravail === t} onClick={() => setF({ ...f, teletravail: t })}>{t}</button>
+              ))}
+            </div>
           </div>
           <label className="field">Description<textarea rows={3} value={f.description} onChange={maj('description')} /></label>
         </section>
         <section className="card stack">
-          <h2>3. Profil recherché</h2>
+          <h2><span className="step">3</span>Profil recherché</h2>
           <label className="field">Compétences requises (séparées par des virgules)<input value={f.requises} onChange={maj('requises')} placeholder="Java, Spring Boot, React" /></label>
+          {requises.length > 0 && <div className="chips">{requises.map((c) => <span key={c} className="chip dark">{c}</span>)}</div>}
           <div className="form-grid">
-            <label className="field">Compétences souhaitées<input value={f.souhaitees} onChange={maj('souhaitees')} /></label>
-            <label className="field">Expérience minimum (années)<input type="number" min={0} value={f.experienceMin} onChange={maj('experienceMin')} /></label>
+            <label className="field">Souhaitées<input value={f.souhaitees} onChange={maj('souhaitees')} placeholder="Kafka" /></label>
+            <label className="field">Expérience min. (années)<input type="number" min={0} value={f.experienceMin} onChange={maj('experienceMin')} /></label>
           </div>
         </section>
         <section className="card stack">
-          <h2>4. Conditions</h2>
+          <h2><span className="step">4</span>Conditions</h2>
           <div className="form-grid">
             <label className="field">Salaire min. (MAD/an)<input type="number" value={f.salaireMin} onChange={maj('salaireMin')} /></label>
             <label className="field">Salaire max. (MAD/an)<input type="number" value={f.salaireMax} onChange={maj('salaireMax')} /></label>
@@ -90,13 +113,7 @@ export default function NouvelleMission() {
               <select value={f.priorite} onChange={maj('priorite')}><option>Haute</option><option>Normale</option></select>
             </label>
           </div>
-          <p className="muted small">Les honoraires sont repris des conditions tarifaires du client.</p>
         </section>
-        {creer.error && <Erreur message={messageErreur(creer.error)} />}
-        <div className="actions" style={{ justifyContent: 'flex-end' }}>
-          <button type="button" className="btn" disabled={creer.isPending} onClick={() => soumettre('BROUILLON')()}>Enregistrer en brouillon</button>
-          <button type="submit" className="btn primary" disabled={creer.isPending}>Ouvrir la mission</button>
-        </div>
       </form>
     </>
   );
