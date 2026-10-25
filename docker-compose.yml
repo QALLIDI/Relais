@@ -60,7 +60,10 @@ services:
       retries: 20
 
   minio:
-    image: minio/minio:latest
+    # Les images officielles minio/minio ne sont plus publiques : même binaire MinIO, publié par Chainguard.
+    image: cgr.dev/chainguard/minio:latest
+    # L'image tourne en utilisateur non root, qui ne peut pas écrire dans le volume nommé.
+    user: "0:0"
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:

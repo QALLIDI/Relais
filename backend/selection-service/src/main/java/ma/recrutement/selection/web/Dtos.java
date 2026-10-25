@@ -58,7 +58,7 @@ public final class Dtos {
             return new CandidatureDto(c.getId(), c.getMissionId(), c.getMissionIntitule(), c.getEntrepriseId(),
                     c.getEntrepriseNom(), c.getCandidatId(), c.getCandidatNom(), c.getCandidatEmail(),
                     c.getCandidatTitre(), c.getCandidatExperience(), c.getCandidatVille(),
-                    competences(c.getCandidatCompetences()), c.getCandidatDisponibilite(), c.getCandidatPretention(),
+                    Dtos.competences(c.getCandidatCompetences()), c.getCandidatDisponibilite(), c.getCandidatPretention(),
                     c.getEtape(), c.getEtape().libelle(), c.getScore(), c.getMotifSortie(), c.getNoteGlobale(),
                     c.getSynthese(), c.getAvisClient(), c.getCommentaireClient(), c.getPresenteLe(),
                     c.getUpdatedAt());
@@ -75,7 +75,7 @@ public final class Dtos {
         public static ProfilPresenteDto of(Candidature c) {
             return new ProfilPresenteDto(c.getId(), c.getMissionId(), c.getMissionIntitule(), c.getCandidatNom(),
                     c.getCandidatTitre(), c.getCandidatExperience(), c.getCandidatVille(),
-                    competences(c.getCandidatCompetences()), c.getCandidatDisponibilite(), c.getCandidatPretention(),
+                    Dtos.competences(c.getCandidatCompetences()), c.getCandidatDisponibilite(), c.getCandidatPretention(),
                     c.getNoteGlobale(), c.getSynthese(), c.getEtape(), c.getEtape().libelle(), c.getAvisClient(),
                     c.getCommentaireClient(), c.getPresenteLe());
         }
