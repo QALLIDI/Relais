@@ -14,7 +14,9 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import ma.recrutement.common.events.CandidatPlaceEvent;
 import ma.recrutement.common.events.EntretienPlanifieEvent;
+import ma.recrutement.common.events.EventPublisher;
 import ma.recrutement.common.events.Events;
+import ma.recrutement.common.events.Topics;
 import ma.recrutement.common.events.RetourClientEvent;
 import ma.recrutement.common.events.ShortlistEnvoyeeEvent;
 import ma.recrutement.common.security.CurrentUser;
@@ -32,7 +34,6 @@ import ma.recrutement.selection.domain.Etape;
 import ma.recrutement.selection.repository.CandidatureRepository;
 import ma.recrutement.selection.repository.EntretienRepository;
 import ma.recrutement.selection.web.Dtos.*;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,7 +52,7 @@ public class SelectionService {
     private final EntretienRepository entretiens;
     private final EntrepriseClient entrepriseClient;
     private final CandidatClient candidatClient;
-    private final RabbitTemplate rabbit;
+    private final EventPublisher events;
 
     // ---------------- Pipeline (recruteur) ----------------
 
@@ -128,7 +129,7 @@ public class SelectionService {
         c.setSalaireAnnuel(req.salaireAnnuel());
         c.setDateEmbauche(req.dateEmbauche());
         MissionView m = entrepriseClient.mission(c.getMissionId());
-        rabbit.convertAndSend(Events.EXCHANGE, Events.CANDIDAT_PLACE, new CandidatPlaceEvent(c.getId(),
+        events.publier(Topics.SELECTION, Events.CANDIDAT_PLACE, c.getId(), new CandidatPlaceEvent(c.getId(),
                 c.getMissionId(), c.getEntrepriseId(), c.getEntrepriseNom(), c.getMissionIntitule(),
                 c.getCandidatId(), c.getCandidatNom(), req.salaireAnnuel(), m.tauxHonoraires(),
                 req.dateEmbauche(), m.contactEmail()));
@@ -154,7 +155,7 @@ public class SelectionService {
             c.setCommentaireClient(null);
         });
         Candidature premiere = choisies.getFirst();
-        rabbit.convertAndSend(Events.EXCHANGE, Events.SHORTLIST_ENVOYEE, new ShortlistEnvoyeeEvent(
+        events.publier(Topics.SELECTION, Events.SHORTLIST_ENVOYEE, req.missionId(), new ShortlistEnvoyeeEvent(
                 req.missionId(), premiere.getEntrepriseId(), premiere.getMissionIntitule(),
                 premiere.getContactEmail(), choisies.stream().map(Candidature::getCandidatNom).toList()));
         return choisies.stream().map(CandidatureDto::of).toList();
@@ -205,7 +206,7 @@ public class SelectionService {
         } else {
             c.setUpdatedAt(OffsetDateTime.now());
         }
-        rabbit.convertAndSend(Events.EXCHANGE, Events.RETOUR_CLIENT, new RetourClientEvent(c.getId(),
+        events.publier(Topics.SELECTION, Events.RETOUR_CLIENT, c.getId(), new RetourClientEvent(c.getId(),
                 c.getMissionIntitule(), c.getCandidatNom(), req.avis().name(), req.commentaire()));
         return ProfilPresenteDto.of(c);
     }
@@ -252,7 +253,7 @@ public class SelectionService {
         } else if (e.getType() == Entretien.Type.RECRUTEUR && c.getEtape().ordinal() < Etape.ENTRETIEN_RECRUTEUR.ordinal()) {
             c.passerA(Etape.ENTRETIEN_RECRUTEUR);
         }
-        rabbit.convertAndSend(Events.EXCHANGE, Events.ENTRETIEN_PLANIFIE, new EntretienPlanifieEvent(e.getId(),
+        events.publier(Topics.SELECTION, Events.ENTRETIEN_PLANIFIE, c.getId(), new EntretienPlanifieEvent(e.getId(),
                 c.getMissionIntitule(), c.getCandidatNom(), c.getCandidatEmail(), c.getContactEmail(),
                 e.getDateHeure(), e.getLieu()));
         return EntretienDto.of(e);

@@ -7,21 +7,23 @@ import java.util.Locale;
 
 import lombok.RequiredArgsConstructor;
 import ma.recrutement.common.events.CandidatPlaceEvent;
+import ma.recrutement.common.events.EvenementsRecus;
 import ma.recrutement.common.events.EntretienPlanifieEvent;
 import ma.recrutement.common.events.Events;
 import ma.recrutement.common.events.FactureEmiseEvent;
 import ma.recrutement.common.events.MissionOuverteEvent;
 import ma.recrutement.common.events.RetourClientEvent;
 import ma.recrutement.common.events.ShortlistEnvoyeeEvent;
-import org.springframework.amqp.rabbit.annotation.Exchange;
-import org.springframework.amqp.rabbit.annotation.Queue;
-import org.springframework.amqp.rabbit.annotation.QueueBinding;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import ma.recrutement.common.events.Topics;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Transforme les événements métier en notifications. Une file par type d'événement.
+ * Transforme les événements métier en notifications. Lit les topics des services émetteurs
+ * et aiguille chaque message selon son type ; un événement déjà traité est ignoré.
  */
 @Component
 @RequiredArgsConstructor
@@ -30,6 +32,7 @@ public class EvenementsListener {
     private static final DateTimeFormatter DATE_HEURE = DateTimeFormatter.ofPattern("EEEE d MMMM 'à' HH:mm", Locale.FRENCH);
 
     private final Notifier notifier;
+    private final EvenementsRecus recus;
 
     @Value("${app.recruteur-email}")
     private String recruteur;
@@ -37,9 +40,23 @@ public class EvenementsListener {
     @Value("${app.front-url}")
     private String front;
 
-    @RabbitListener(bindings = @QueueBinding(value = @Queue(name = "notification.mission-ouverte", durable = "true"),
-            exchange = @Exchange(name = Events.EXCHANGE, type = "topic"), key = Events.MISSION_OUVERTE))
-    public void missionOuverte(MissionOuverteEvent e) {
+    @KafkaListener(topics = {Topics.ENTREPRISE, Topics.SELECTION, Topics.FACTURATION})
+    @Transactional
+    public void recevoir(ConsumerRecord<String, String> message) {
+        switch (recus.type(message)) {
+            case Events.MISSION_OUVERTE -> recus.traiter(message, MissionOuverteEvent.class, this::missionOuverte);
+            case Events.SHORTLIST_ENVOYEE -> recus.traiter(message, ShortlistEnvoyeeEvent.class, this::shortlist);
+            case Events.RETOUR_CLIENT -> recus.traiter(message, RetourClientEvent.class, this::retourClient);
+            case Events.ENTRETIEN_PLANIFIE -> recus.traiter(message, EntretienPlanifieEvent.class, this::entretien);
+            case Events.CANDIDAT_PLACE -> recus.traiter(message, CandidatPlaceEvent.class, this::placement);
+            case Events.FACTURE_EMISE -> recus.traiter(message, FactureEmiseEvent.class, this::facture);
+            default -> {
+                // Événement sans notification associée.
+            }
+        }
+    }
+
+    void missionOuverte(MissionOuverteEvent e) {
         notifier.notifier(recruteur, Events.MISSION_OUVERTE, "Mission ouverte : " + e.intitule(),
                 "La mission « %s » pour %s est ouverte. Les profils correspondants du vivier sont proposés dans le pipeline : %s/recruteur/missions/%s"
                         .formatted(e.intitule(), e.entrepriseNom(), front, e.missionId()));
@@ -48,18 +65,14 @@ public class EvenementsListener {
                         .formatted(e.intitule(), front));
     }
 
-    @RabbitListener(bindings = @QueueBinding(value = @Queue(name = "notification.shortlist-envoyee", durable = "true"),
-            exchange = @Exchange(name = Events.EXCHANGE, type = "topic"), key = Events.SHORTLIST_ENVOYEE))
-    public void shortlist(ShortlistEnvoyeeEvent e) {
+    void shortlist(ShortlistEnvoyeeEvent e) {
         notifier.notifier(e.contactEmail(), Events.SHORTLIST_ENVOYEE,
                 "%d profil(s) à évaluer pour « %s »".formatted(e.candidats().size(), e.missionIntitule()),
                 "Votre recruteur vous a présenté : %s. Donnez votre avis sur chaque profil : %s/entreprise/shortlist/%s"
                         .formatted(String.join(", ", e.candidats()), front, e.missionId()));
     }
 
-    @RabbitListener(bindings = @QueueBinding(value = @Queue(name = "notification.retour-client", durable = "true"),
-            exchange = @Exchange(name = Events.EXCHANGE, type = "topic"), key = Events.RETOUR_CLIENT))
-    public void retourClient(RetourClientEvent e) {
+    void retourClient(RetourClientEvent e) {
         String decision = switch (e.decision()) {
             case "RETENU" -> "retenu";
             case "A_RENCONTRER" -> "à rencontrer";
@@ -70,9 +83,7 @@ public class EvenementsListener {
                         decision, e.commentaire() == null ? "" : " Commentaire : " + e.commentaire()));
     }
 
-    @RabbitListener(bindings = @QueueBinding(value = @Queue(name = "notification.entretien-planifie", durable = "true"),
-            exchange = @Exchange(name = Events.EXCHANGE, type = "topic"), key = Events.ENTRETIEN_PLANIFIE))
-    public void entretien(EntretienPlanifieEvent e) {
+    void entretien(EntretienPlanifieEvent e) {
         String quand = DATE_HEURE.format(e.dateHeure().atZoneSameInstant(ZoneId.of("Africa/Casablanca")));
         String lieu = e.lieu() == null ? "" : " (" + e.lieu() + ")";
         notifier.notifier(e.candidatEmail(), Events.ENTRETIEN_PLANIFIE, "Entretien proposé : " + e.missionIntitule(),
@@ -82,17 +93,13 @@ public class EvenementsListener {
                 "Entretien avec %s pour « %s » le %s%s.".formatted(e.candidatNom(), e.missionIntitule(), quand, lieu));
     }
 
-    @RabbitListener(bindings = @QueueBinding(value = @Queue(name = "notification.candidat-place", durable = "true"),
-            exchange = @Exchange(name = Events.EXCHANGE, type = "topic"), key = Events.CANDIDAT_PLACE))
-    public void placement(CandidatPlaceEvent e) {
+    void placement(CandidatPlaceEvent e) {
         notifier.notifier(recruteur, Events.CANDIDAT_PLACE, "Placement : " + e.candidatNom(),
                 "%s est placé(e) chez %s (%s), embauche le %s. Une facture brouillon a été préparée."
                         .formatted(e.candidatNom(), e.entrepriseNom(), e.missionIntitule(), e.dateEmbauche()));
     }
 
-    @RabbitListener(bindings = @QueueBinding(value = @Queue(name = "notification.facture-emise", durable = "true"),
-            exchange = @Exchange(name = Events.EXCHANGE, type = "topic"), key = Events.FACTURE_EMISE))
-    public void facture(FactureEmiseEvent e) {
+    void facture(FactureEmiseEvent e) {
         NumberFormat montant = NumberFormat.getNumberInstance(Locale.FRANCE);
         montant.setMinimumFractionDigits(2);
         notifier.notifier(e.contactEmail(), Events.FACTURE_EMISE, "Facture " + e.numero(),

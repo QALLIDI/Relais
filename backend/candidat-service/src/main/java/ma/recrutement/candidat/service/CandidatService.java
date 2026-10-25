@@ -28,11 +28,12 @@ import ma.recrutement.candidat.web.Dtos.Groupe;
 import ma.recrutement.candidat.web.Dtos.NoteDto;
 import ma.recrutement.candidat.web.Dtos.VivierStats;
 import ma.recrutement.common.events.CandidatEvent;
+import ma.recrutement.common.events.EventPublisher;
 import ma.recrutement.common.events.Events;
+import ma.recrutement.common.events.Topics;
 import ma.recrutement.common.security.CurrentUser;
 import ma.recrutement.common.security.Roles;
 import ma.recrutement.common.web.NotFoundException;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,7 +46,7 @@ public class CandidatService {
     private final CandidatRepository candidats;
     private final NoteRepository notes;
     private final CvStorage cvStorage;
-    private final RabbitTemplate rabbit;
+    private final EventPublisher events;
 
     @Transactional(readOnly = true)
     public List<CandidatResume> rechercher(String q, String ville, Niveau niveau, Disponibilite dispo,
@@ -242,8 +243,8 @@ public class CandidatService {
         c.setNiveau(Niveau.depuisExperience(req.anneesExperience()));
     }
 
-    private void publier(String routingKey, Candidat c) {
-        rabbit.convertAndSend(Events.EXCHANGE, routingKey, new CandidatEvent(c.getId(), c.getNomComplet(),
+    private void publier(String type, Candidat c) {
+        events.publier(Topics.CANDIDAT, type, c.getId(), new CandidatEvent(c.getId(), c.getNomComplet(),
                 c.getTitre(), c.getAnneesExperience(), c.getVille(), List.copyOf(c.getCompetences())));
     }
 

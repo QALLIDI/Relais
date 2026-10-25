@@ -1,6 +1,7 @@
 # Plateforme de pré-sélection — stack local.
 #   docker compose up -d --build
 # Front : http://localhost:3000 · Keycloak : http://localhost:8180 · Mailpit : http://localhost:8025
+# Kafka UI : http://localhost:8090 · Kafka depuis la machine : localhost:9094
 # Observabilité (Prometheus, Grafana, ELK) : à ajouter sous le profil « observabilite ».
 
 x-service: &service
@@ -9,17 +10,22 @@ x-service: &service
     DB_HOST: postgres
     DB_USER: ${POSTGRES_USER}
     DB_PASSWORD: ${POSTGRES_PASSWORD}
-    RABBITMQ_HOST: rabbitmq
-    RABBITMQ_USER: ${RABBITMQ_USER}
-    RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    KAFKA_BOOTSTRAP: kafka:9092
     KEYCLOAK_INTERNAL_URL: http://keycloak:8080
     KEYCLOAK_PUBLIC_URL: http://localhost:8180
     JAVA_OPTS: -XX:MaxRAMPercentage=75
   mem_limit: 512m
+  # PORT ne sert qu'au healthcheck : chaque service le renseigne avec son port.
+  healthcheck: &service-health
+    test: ["CMD-SHELL", "curl -fs http://localhost:$${PORT}/actuator/health/readiness || exit 1"]
+    interval: 10s
+    timeout: 5s
+    retries: 30
+    start_period: 40s
   depends_on: &service-deps
     postgres:
       condition: service_healthy
-    rabbitmq:
+    kafka:
       condition: service_healthy
     keycloak:
       condition: service_healthy
@@ -44,19 +50,54 @@ services:
       timeout: 5s
       retries: 20
 
-  rabbitmq:
-    image: rabbitmq:4-management
+  # Kafka en un seul nœud KRaft (sans ZooKeeper). Les services créent leurs topics au démarrage.
+  kafka:
+    image: apache/kafka:4.1.0
     restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: INTERNE://:9092,EXTERNE://:9094,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNE://kafka:9092,EXTERNE://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNE:PLAINTEXT,EXTERNE:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNE
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "9094:9094"
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
       interval: 10s
       timeout: 10s
+      retries: 20
+      start_period: 15s
+
+  kafka-ui:
+    image: kafbat/kafka-ui:v1.3.0
+    restart: unless-stopped
+    environment:
+      KAFKA_CLUSTERS_0_NAME: recrutement
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    ports:
+      - "8090:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  # Données éphémères uniquement (limitation de débit, puis codes SMS) : pas de volume.
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
       retries: 20
 
   minio:
@@ -131,10 +172,15 @@ services:
       FACTURATION_SERVICE_URL: http://facturation-service:8085
       NOTIFICATION_SERVICE_URL: http://notification-service:8086
       CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173
+      REDIS_HOST: redis
+      PORT: "8080"
+    healthcheck: *service-health
     ports:
       - "8080:8080"
     depends_on:
       keycloak:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   entreprise-service:
@@ -143,6 +189,9 @@ services:
       context: ./backend
       args:
         SERVICE: entreprise-service
+    environment:
+      <<: *service-env
+      PORT: "8082"
 
   candidat-service:
     <<: *service
@@ -152,6 +201,7 @@ services:
         SERVICE: candidat-service
     environment:
       <<: *service-env
+      PORT: "8083"
       MINIO_URL: http://minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
@@ -168,6 +218,7 @@ services:
         SERVICE: selection-service
     environment:
       <<: *service-env
+      PORT: "8084"
       ENTREPRISE_SERVICE_URL: http://entreprise-service:8082
       CANDIDAT_SERVICE_URL: http://candidat-service:8083
 
@@ -179,6 +230,7 @@ services:
         SERVICE: facturation-service
     environment:
       <<: *service-env
+      PORT: "8085"
       CABINET_NOM: ${CABINET_NOM}
       CABINET_ADRESSE: ${CABINET_ADRESSE}
       CABINET_ICE: ${CABINET_ICE}
@@ -191,6 +243,7 @@ services:
         SERVICE: notification-service
     environment:
       <<: *service-env
+      PORT: "8086"
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
       RECRUTEUR_EMAIL: ${RECRUTEUR_EMAIL}
@@ -212,7 +265,8 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      - gateway-service
+      gateway-service:
+        condition: service_healthy
 
 volumes:
   postgres-data:

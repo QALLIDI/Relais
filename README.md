@@ -1,6 +1,6 @@
 # Plateforme de pré-sélection de profils
 
-Monorepo : front React, gateway Spring Cloud, Keycloak et 5 microservices Spring Boot, chacun avec sa base PostgreSQL, reliés par RabbitMQ. Tout se lance en local avec Docker Compose.
+Monorepo : front React, gateway Spring Cloud, Keycloak et 5 microservices Spring Boot, chacun avec sa base PostgreSQL, reliés par Apache Kafka. Redis sert à la limitation de débit de la gateway. Tout se lance en local avec Docker Compose.
 
 ```
 backend/      POM parent Maven + common-lib + gateway-service + 5 services métier
@@ -25,7 +25,7 @@ Le premier build télécharge les dépendances Maven et npm (10 à 15 minutes). 
 | Application | http://localhost:3000 | voir comptes ci-dessous |
 | Keycloak (console) | http://localhost:8180 | admin / admin |
 | Mailpit (e-mails envoyés) | http://localhost:8025 | — |
-| RabbitMQ (console) | http://localhost:15672 | recrutement / recrutement |
+| Kafka UI (topics, messages, retard des consommateurs) | http://localhost:8090 | — |
 | MinIO (console) | http://localhost:9001 | recrutement / recrutement123 |
 | Gateway (API) | http://localhost:8080/api/... | jeton Keycloak |
 
@@ -51,7 +51,7 @@ Les candidats peuvent aussi s'inscrire eux-mêmes depuis la page de connexion (r
 Lancer seulement l'infrastructure, puis un service depuis l'IDE :
 
 ```bash
-docker compose up -d postgres rabbitmq keycloak minio mailpit
+docker compose up -d postgres kafka redis keycloak minio mailpit
 cd backend && mvn -pl candidat-service -am spring-boot:run
 cd frontend && npm install && npm run dev      # http://localhost:5173
 ```
@@ -76,7 +76,11 @@ Tests unitaires (calcul du score de matching, honoraires et TVA) : `cd backend &
 
 **Appels entre services** : selection-service appelle entreprise-service et candidat-service en REST (OpenFeign), en propageant le jeton de l'utilisateur.
 
-**Événements RabbitMQ** (exchange `recrutement.events`) :
+**Événements Kafka** : un topic par service émetteur (`entreprise.events`, `candidat.events`, `selection.events`, `facturation.events`, plus `compte.events` et `agenda.events` réservés), 3 partitions, rétention 7 jours. La clé du message est l'identifiant de l'objet concerné ; le type d'événement voyage dans l'en-tête `eventType`, le corps en JSON.
+
+- **Publication** : outbox transactionnelle. Le service écrit l'événement dans sa table `outbox` dans la même transaction que la donnée, puis une tâche l'envoie dans Kafka (`common-lib` : `EventPublisher`, `OutboxRelay`).
+- **Consommation** : un groupe de consommateurs par service (son nom). Chaque événement traité est noté dans `evenement_traite` : un message livré deux fois n'est traité qu'une fois (`EvenementsRecus`).
+- **Erreurs** : 3 nouvelles tentatives espacées d'une seconde, puis le message part dans `<topic>.DLT`, visible dans Kafka UI.
 
 | Événement | Émetteur | Consommateurs |
 | --- | --- | --- |
@@ -101,7 +105,7 @@ Les services exposent déjà `/actuator/prometheus` (Micrometer) et Keycloak a `
 - L'extraction automatique des CV (Tika) n'est pas encore branchée : le CV est stocké, le profil se saisit à la main.
 - La 2FA du recruteur n'est pas imposée en local : l'activer dans Keycloak (action requise « Configure OTP »).
 - Les comptes entreprise se créent dans la console Keycloak (rôle ENTREPRISE + attribut `entrepriseId`).
-- Pas encore de tests d'intégration (Testcontainers) ni de file d'erreurs RabbitMQ dédiée.
+- Pas encore de tests d'intégration (Testcontainers).
 - Front : CSS maison et glisser-déposer natif HTML5 (pas de Tailwind ni dnd-kit pour l'instant).
 
 ## Interface (maquettes « Ember »)

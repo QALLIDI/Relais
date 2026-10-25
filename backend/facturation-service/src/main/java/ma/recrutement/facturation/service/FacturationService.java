@@ -16,8 +16,11 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.recrutement.common.events.CandidatPlaceEvent;
+import ma.recrutement.common.events.EvenementsRecus;
+import ma.recrutement.common.events.EventPublisher;
 import ma.recrutement.common.events.Events;
 import ma.recrutement.common.events.FactureEmiseEvent;
+import ma.recrutement.common.events.Topics;
 import ma.recrutement.common.security.CurrentUser;
 import ma.recrutement.common.security.Roles;
 import ma.recrutement.common.web.BusinessException;
@@ -28,12 +31,9 @@ import ma.recrutement.facturation.domain.StatutFacture;
 import ma.recrutement.facturation.repository.FactureRepository;
 import ma.recrutement.facturation.repository.PlacementRepository;
 import ma.recrutement.facturation.web.Dtos.*;
-import org.springframework.amqp.rabbit.annotation.Exchange;
-import org.springframework.amqp.rabbit.annotation.Queue;
-import org.springframework.amqp.rabbit.annotation.QueueBinding;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +46,8 @@ public class FacturationService {
 
     private final PlacementRepository placements;
     private final FactureRepository factures;
-    private final RabbitTemplate rabbit;
+    private final EventPublisher events;
+    private final EvenementsRecus recus;
 
     @Value("${app.facturation.garantie-mois:3}")
     private int garantieMois;
@@ -54,12 +55,18 @@ public class FacturationService {
     @Value("${app.facturation.delai-paiement-jours:30}")
     private int delaiPaiementJours;
 
+    @KafkaListener(topics = Topics.SELECTION)
+    public void recevoir(ConsumerRecord<String, String> message) {
+        switch (recus.type(message)) {
+            case Events.CANDIDAT_PLACE -> recus.traiter(message, CandidatPlaceEvent.class, this::surPlacement);
+            default -> {
+                // Les autres événements de la sélection ne concernent pas la facturation.
+            }
+        }
+    }
+
     /** Un placement crée automatiquement une facture brouillon des honoraires. Traitement idempotent. */
-    @RabbitListener(bindings = @QueueBinding(
-            value = @Queue(name = "facturation.candidat-place", durable = "true"),
-            exchange = @Exchange(name = Events.EXCHANGE, type = "topic"),
-            key = Events.CANDIDAT_PLACE))
-    public void surPlacement(CandidatPlaceEvent e) {
+    void surPlacement(CandidatPlaceEvent e) {
         if (placements.existsByCandidatureId(e.candidatureId())) {
             log.info("Placement déjà enregistré pour la candidature {}", e.candidatureId());
             return;
@@ -117,7 +124,7 @@ public class FacturationService {
         f.setStatut(StatutFacture.EMISE);
         f.setDateEmission(aujourdhui);
         f.setEcheance(aujourdhui.plusDays(delaiPaiementJours));
-        rabbit.convertAndSend(Events.EXCHANGE, Events.FACTURE_EMISE, new FactureEmiseEvent(f.getId(), f.getNumero(),
+        events.publier(Topics.FACTURATION, Events.FACTURE_EMISE, f.getId(), new FactureEmiseEvent(f.getId(), f.getNumero(),
                 f.getEntrepriseId(), f.getEntrepriseNom(), f.getMontantTtc(), f.getEcheance(), f.getContactEmail()));
         return FactureDto.of(f);
     }

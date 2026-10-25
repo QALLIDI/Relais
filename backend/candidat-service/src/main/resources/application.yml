@@ -12,10 +12,12 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate
-  rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    username: ${RABBITMQ_USER:recrutement}
-    password: ${RABBITMQ_PASSWORD:recrutement}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9094}
+    consumer:
+      # Un groupe par service : il lit à son rythme et peut rejouer l'historique.
+      group-id: ${spring.application.name}
+      auto-offset-reset: earliest
   servlet:
     multipart:
       max-file-size: 10MB

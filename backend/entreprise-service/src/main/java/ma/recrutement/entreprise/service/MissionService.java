@@ -7,7 +7,9 @@ import java.util.Map;
 import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
+import ma.recrutement.common.events.EventPublisher;
 import ma.recrutement.common.events.Events;
+import ma.recrutement.common.events.Topics;
 import ma.recrutement.common.events.MissionOuverteEvent;
 import ma.recrutement.common.security.CurrentUser;
 import ma.recrutement.common.security.Roles;
@@ -21,7 +23,6 @@ import ma.recrutement.entreprise.web.Dtos.CompetenceCount;
 import ma.recrutement.entreprise.web.Dtos.MissionDto;
 import ma.recrutement.entreprise.web.Dtos.MissionRequest;
 import ma.recrutement.entreprise.web.Dtos.MissionStats;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +34,7 @@ public class MissionService {
 
     private final MissionRepository missions;
     private final EntrepriseRepository entreprises;
-    private final RabbitTemplate rabbit;
+    private final EventPublisher events;
 
     @Transactional(readOnly = true)
     public List<MissionDto> lister(StatutMission statut) {
@@ -109,7 +110,7 @@ public class MissionService {
         if (m.getStatut() == StatutMission.OUVERTE && !m.isOuvertureNotifiee()) {
             m.setOuvertureNotifiee(true);
             Entreprise e = m.getEntreprise();
-            rabbit.convertAndSend(Events.EXCHANGE, Events.MISSION_OUVERTE, new MissionOuverteEvent(
+            events.publier(Topics.ENTREPRISE, Events.MISSION_OUVERTE, m.getId(), new MissionOuverteEvent(
                     m.getId(), e.getId(), e.getRaisonSociale(), m.getIntitule(), m.getVille(),
                     List.copyOf(m.getCompetencesRequises()), e.contactPrincipalEmail()));
         }

@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: gateway-service
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   security:
     oauth2:
       resourceserver:
@@ -17,6 +21,13 @@ spring:
         webflux:
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+            # Quota par utilisateur (ou par IP) : 20 requêtes/s en continu, pointes jusqu'à 60. Réponse 429 au-delà.
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${RATE_LIMIT_PAR_SECONDE:20}
+                redis-rate-limiter.burstCapacity: ${RATE_LIMIT_POINTE:60}
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@cleLimitation}"
           routes:
             - id: entreprise-service
               uri: ${ENTREPRISE_SERVICE_URL:http://localhost:8082}
