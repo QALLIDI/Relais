@@ -98,7 +98,7 @@ export default function Facturation() {
                 <dt style={{ color: 'inherit', fontWeight: 600, borderTop: '1px solid var(--line)', paddingTop: 8 }}>Total TTC</dt>
                 <dd className="mono" style={{ fontWeight: 600, borderTop: '1px solid var(--line)', paddingTop: 8 }}>{n(brouillon.montantTtc)}</dd>
               </dl>
-              <button className="btn" style={{ background: '#17181c', color: '#fff' }} onClick={() => action.mutate({ id: brouillon.id, verbe: 'emettre' })}>Émettre la facture</button>
+              <button className="btn primary" onClick={() => action.mutate({ id: brouillon.id, verbe: 'emettre' })}>Émettre la facture</button>
             </section>
           )}
           <section className="card stack" style={{ gap: 12 }}>
@@ -114,7 +114,7 @@ export default function Facturation() {
                     <span>{p.candidatNom} · {p.entrepriseNom}</span><span className="muted">jusqu'au {dateCourte(p.finGarantie)}</span>
                   </div>
                   <div className="progress" role="img" aria-label={`Garantie écoulée à ${pct} %`} style={{ display: 'block', height: 8, borderRadius: 999, background: 'var(--line)' }}>
-                    <div style={{ width: `${pct}%`, height: 8, background: 'var(--ink)' }} />
+                    <div style={{ width: `${pct}%`, height: 8, background: 'var(--accent)' }} />
                   </div>
                 </div>
               );

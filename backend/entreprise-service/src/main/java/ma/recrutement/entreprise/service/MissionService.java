@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import ma.recrutement.common.events.EventPublisher;
 import ma.recrutement.common.events.Events;
 import ma.recrutement.common.events.Topics;
+import ma.recrutement.common.events.MissionAnnuleeEvent;
 import ma.recrutement.common.events.MissionOuverteEvent;
 import ma.recrutement.common.security.CurrentUser;
 import ma.recrutement.common.security.Roles;
@@ -86,10 +87,18 @@ public class MissionService {
         return MissionDto.of(m);
     }
 
-    public MissionDto changerStatut(UUID id, StatutMission statut) {
+    public MissionDto changerStatut(UUID id, StatutMission statut, String motif) {
         Mission m = chargerAvecDroits(id);
+        boolean annulation = statut == StatutMission.ANNULEE && m.getStatut() != StatutMission.ANNULEE;
         m.setStatut(statut);
         notifierSiOuverte(m);
+        if (annulation) {
+            m.setMotifAnnulation(motif == null || motif.isBlank() ? null : motif.strip());
+            Entreprise e = m.getEntreprise();
+            events.publier(Topics.ENTREPRISE, Events.MISSION_ANNULEE, m.getId(), new MissionAnnuleeEvent(
+                    m.getId(), e.getId(), e.getRaisonSociale(), m.getIntitule(), m.getMotifAnnulation(),
+                    e.contactPrincipalEmail()));
+        }
         return MissionDto.of(m);
     }
 
@@ -128,6 +137,9 @@ public class MissionService {
         m.setSalaireMax(req.salaireMax());
         m.setDateLimite(req.dateLimite());
         m.setPriorite(req.priorite());
+        if (req.confidentiel() != null) {
+            m.setConfidentiel(req.confidentiel());
+        }
         m.setCompetencesRequises(new ArrayList<>(req.competencesRequises() == null ? List.of() : req.competencesRequises()));
         m.setCompetencesSouhaitees(new ArrayList<>(req.competencesSouhaitees() == null ? List.of() : req.competencesSouhaitees()));
     }

@@ -14,10 +14,15 @@ public final class Events {
     public static final String COMPTE_CODE_SMS = "compte.code_sms";
     public static final String COMPTE_CREE = "compte.cree";
     public static final String MISSION_OUVERTE = "mission.ouverte";
+    public static final String MISSION_ANNULEE = "mission.annulee";
+    public static final String RATTACHEMENT_ACCEPTE = "rattachement.accepte";
+    public static final String RATTACHEMENT_REFUSE = "rattachement.refuse";
     public static final String CANDIDAT_CREE = "candidat.cree";
     public static final String CANDIDAT_MODIFIE = "candidat.modifie";
+    public static final String CANDIDAT_ANONYMISE = "candidat.anonymise";
     public static final String SHORTLIST_ENVOYEE = "shortlist.envoyee";
     public static final String RETOUR_CLIENT = "retour.client";
+    public static final String CANDIDATURES_CLOSES = "candidatures.closes";
     public static final String ENTRETIEN_PLANIFIE = "entretien.planifie";
     public static final String CANDIDAT_PLACE = "candidat.place";
     public static final String FACTURE_EMISE = "facture.emise";

@@ -61,6 +61,12 @@ public class Candidat {
     /** Date du consentement loi 09-08 / RGPD ; null = pas de consentement. */
     private LocalDate consentementLe;
 
+    /** Rester dans le vivier du cabinet même sans être retenu pour une mission. */
+    private boolean consentementVivier = true;
+
+    /** Recevoir les actualités de Recrut (un e-mail par mois au plus). */
+    private boolean consentementActualites;
+
     private String cvObjectKey;
     private String cvNomFichier;
 

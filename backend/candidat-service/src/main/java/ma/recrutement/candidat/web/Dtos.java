@@ -49,7 +49,7 @@ public final class Dtos {
                               String disponibiliteLibelle, BigDecimal pretentionSalaire, String langues,
                               String source, List<String> competences, List<ExperienceDto> experiences,
                               LocalDate consentementLe, boolean cvDisponible, String cvNomFichier,
-                              OffsetDateTime createdAt) {
+                              OffsetDateTime createdAt, boolean consentementVivier, boolean consentementActualites) {
         public static CandidatDto of(Candidat c) {
             return new CandidatDto(c.getId(), c.getNomComplet(), c.getEmail(), c.getTelephone(), c.getTitre(),
                     c.getAnneesExperience(), c.getNiveau(), c.getNiveau() == null ? null : c.getNiveau().libelle(),
@@ -57,8 +57,13 @@ public final class Dtos {
                     c.getDisponibilite() == null ? null : c.getDisponibilite().libelle(), c.getPretentionSalaire(),
                     c.getLangues(), c.getSource(), List.copyOf(c.getCompetences()),
                     c.getExperiences().stream().map(ExperienceDto::of).toList(), c.getConsentementLe(),
-                    c.getCvObjectKey() != null, c.getCvNomFichier(), c.getCreatedAt());
+                    c.getCvObjectKey() != null, c.getCvNomFichier(), c.getCreatedAt(), c.isConsentementVivier(),
+                    c.isConsentementActualites());
         }
+    }
+
+    /** Choix du candidat sur la page « Mes données » ; un champ absent n'est pas modifié. */
+    public record ConsentementsRequest(Boolean presentation, Boolean vivier, Boolean actualites) {
     }
 
     /** Résumé sans coordonnées : ce que voient la shortlist côté client et le pipeline. */

@@ -1,19 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useAuth } from 'react-oidc-context';
 import { api, messageErreur, telecharger } from '../../api/client';
-import { dateFr } from '../../api/format';
 import type { Candidat, CandidatRequest } from '../../api/types';
 import { CandidatForm } from '../../components/CandidatForm';
-import { Chargement, Erreur, Modal } from '../../components/ui';
+import { Chargement, Erreur } from '../../components/ui';
 
 export default function MonProfil() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const auth = useAuth();
-  const [supprimer, setSupprimer] = useState(false);
   const [enregistre, setEnregistre] = useState(false);
   const profil = useQuery({
     queryKey: ['candidat', 'me'],
@@ -32,20 +30,16 @@ export default function MonProfil() {
     },
     onSuccess: (res) => qc.setQueryData(['candidat', 'me'], res.data),
   });
-  const effacer = useMutation({
-    mutationFn: () => api.delete('/api/candidats/me'),
-    onSuccess: () => void auth.signoutRedirect(),
-  });
 
   const pasDeProfil = axios.isAxiosError(profil.error) && profil.error.response?.status === 404;
-  if (profil.isLoading) return <main className="page narrow"><Chargement /></main>;
+  if (profil.isLoading) return <div className="page narrow"><Chargement /></div>;
   const c = profil.data;
   const initial = c ?? (pasDeProfil ? ({
     nomComplet: auth.user?.profile.name ?? '', email: auth.user?.profile.email, anneesExperience: 0, competences: [], experiences: [], cvDisponible: false,
   } as unknown as Candidat) : undefined);
 
   return (
-    <main className="page" style={{ maxWidth: 960 }}>
+    <div className="page" style={{ maxWidth: 960 }}>
       <header className="header">
         <h1 style={{ fontSize: 34 }}>{c ? 'Mon profil et mon CV' : 'Créer mon profil'}</h1>
         {c && <button className="btn" onClick={() => navigate('/candidat')}>Retour à l'accueil</button>}
@@ -77,23 +71,10 @@ export default function MonProfil() {
       {c && (
         <section className="card stack">
           <h2>Mes données personnelles</h2>
-          <p className="muted" style={{ margin: 0 }}>
-            Consentement donné le {dateFr(c.consentementLe)}. Vous pouvez supprimer votre profil : il sera anonymisé et votre CV effacé.
-          </p>
-          <div><button className="btn danger" onClick={() => setSupprimer(true)}>Supprimer mon profil</button></div>
+          <p className="muted" style={{ margin: 0 }}>Consentements, téléchargement de vos données et suppression du compte.</p>
+          <div><Link className="btn" to="/candidat/donnees">Gérer mes données</Link></div>
         </section>
       )}
-
-      {supprimer && (
-        <Modal titre="Supprimer votre profil ?" onClose={() => setSupprimer(false)}>
-          <p className="muted" style={{ margin: 0 }}>Votre profil sera anonymisé, votre CV effacé, et vous serez déconnecté. Cette action est définitive.</p>
-          {effacer.error && <Erreur message={messageErreur(effacer.error)} />}
-          <div className="actions" style={{ justifyContent: 'flex-end' }}>
-            <button className="btn" onClick={() => setSupprimer(false)}>Annuler</button>
-            <button className="btn danger" disabled={effacer.isPending} onClick={() => effacer.mutate()}>Supprimer définitivement</button>
-          </div>
-        </Modal>
-      )}
-    </main>
+    </div>
   );
 }

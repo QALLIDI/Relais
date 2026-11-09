@@ -107,9 +107,9 @@ export default function Inscription() {
       <aside className="signup-aside">
         <div className="brand">
           <svg width="24" height="24" viewBox="0 0 26 26" aria-hidden="true">
-            <circle cx="8" cy="8" r="5" fill="#fff" />
-            <circle cx="18" cy="18" r="5" fill="#fff" />
-            <path d="M6 20L20 6" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
+            <circle cx="8" cy="8" r="5" fill="#e8622a" />
+            <circle cx="18" cy="18" r="5" fill="#e8622a" />
+            <path d="M6 20L20 6" stroke="#e8622a" strokeWidth="3" strokeLinecap="round" />
           </svg>
           Recrut
         </div>

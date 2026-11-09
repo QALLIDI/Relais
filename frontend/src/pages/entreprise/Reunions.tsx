@@ -6,6 +6,7 @@ import { initiales } from '../../api/format';
 import { avisAttendu, fmtHeure, fmtJour, libelleStatutReunion, memeJour, plage, repere, toneStatutReunion, useReunions } from '../../api/reunions';
 import type { PlageDisponibilite, Reunion } from '../../api/types';
 import { Chargement, Erreur, Kpi, Modal, Pill, Vide } from '../../components/ui';
+import { versFenetre } from '../../components/Fenetre';
 
 const JOURS = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.'];
 const jourSeul = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' });
@@ -27,7 +28,7 @@ export default function Reunions() {
   const demain = new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate() + 1);
 
   return (
-    <main className="page">
+    <div className="page">
       <section className="header">
         <h1>Entretiens</h1>
         <div className="kpis">
@@ -85,7 +86,7 @@ export default function Reunions() {
               <span className="avatar" style={{ width: 52, height: 52, flexBasis: 52, background: 'var(--violet)', color: '#fff' }} aria-hidden="true">{initiales(r.candidatNom ?? '')}</span>
               <span style={{ flex: '1 1 160px', minWidth: 0 }}><b style={{ fontWeight: 600, fontSize: 17 }}>{r.candidatNom}</b>
                 <span className="small" style={{ display: 'block', color: 'var(--ink-2)' }}>{r.missionIntitule} · {r.debut ? fmtJour(r.debut) : ''} · {r.dureeMinutes} min</span></span>
-              <Link className="btn accent small" to={`/entreprise/entretiens/${r.id}/evaluation`}>Évaluer</Link>
+              <Link className="btn accent small" to={versFenetre('evaluation', { reunion: r.id })}>Évaluer</Link>
             </div>
           ))}
           {aVenir.length > 0 && (
@@ -94,7 +95,7 @@ export default function Reunions() {
               {aVenir.map((r) => (
                 <div key={r.id} className="list-item">
                   <span>{r.candidatNom} <span className="muted small">· {r.debut && r.fin ? plage(r.debut, r.fin) : ''}</span></span>
-                  <Link className="btn small" to={`/entreprise/entretiens/${r.id}/evaluation`}>Évaluer</Link>
+                  <Link className="btn small" to={versFenetre('evaluation', { reunion: r.id })}>Évaluer</Link>
                 </div>
               ))}
             </>
@@ -109,7 +110,7 @@ export default function Reunions() {
       </div>
 
       {report && <DialogueReport r={report} onClose={() => setReport(null)} onFait={() => { setReport(null); void qc.invalidateQueries({ queryKey: ['reunions'] }); }} />}
-    </main>
+    </div>
   );
 }
 
@@ -121,7 +122,7 @@ function LignePlanning({ r }: { r: Reunion }) {
       <span className="avatar" style={{ background: 'var(--surface)', color: attente ? 'var(--warn)' : 'var(--ink)' }} aria-hidden="true">{initiales(r.candidatNom ?? '')}</span>
       <span style={{ flex: '1 1 160px', minWidth: 0 }}><b style={{ fontWeight: 600 }}>{r.candidatNom}</b><span className="muted small" style={{ display: 'block' }}>{quand}</span></span>
       {(r.statut === 'A_PLANIFIER' || r.statut === 'REPORTEE')
-        ? <Link className="btn small" to={`/entreprise/entretiens/planifier?reunion=${r.id}`}>Proposer des créneaux</Link>
+        ? <Link className="btn small" to={versFenetre('planifier', { reunion: r.id })}>Proposer des créneaux</Link>
         : <span className="small" style={{ fontWeight: 600, color: toneStatutReunion(r.statut) === 'ok' ? 'var(--ok)' : 'var(--warn)' }}>{libelleStatutReunion[r.statut]}</span>}
     </div>
   );

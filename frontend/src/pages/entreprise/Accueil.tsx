@@ -34,7 +34,7 @@ export default function EntrepriseAccueil() {
   const prenom = auth.user?.profile.given_name ?? auth.user?.profile.name;
 
   return (
-    <main className="page">
+    <div className="page">
       <section className="header">
         <div>
           <div className="sub" style={{ marginTop: 0 }}>{prenom ? `Bonjour ${prenom}` : 'Bonjour'}</div>
@@ -144,6 +144,6 @@ export default function EntrepriseAccueil() {
           ))}
         </section>
       </div>
-    </main>
+    </div>
   );
 }

@@ -23,10 +23,12 @@ import ma.recrutement.candidat.repository.NoteRepository;
 import ma.recrutement.candidat.web.Dtos.CandidatDto;
 import ma.recrutement.candidat.web.Dtos.CandidatRequest;
 import ma.recrutement.candidat.web.Dtos.CandidatResume;
+import ma.recrutement.candidat.web.Dtos.ConsentementsRequest;
 import ma.recrutement.candidat.web.Dtos.ExperienceDto;
 import ma.recrutement.candidat.web.Dtos.Groupe;
 import ma.recrutement.candidat.web.Dtos.NoteDto;
 import ma.recrutement.candidat.web.Dtos.VivierStats;
+import ma.recrutement.common.events.CandidatAnonymiseEvent;
 import ma.recrutement.common.events.CandidatEvent;
 import ma.recrutement.common.events.EventPublisher;
 import ma.recrutement.common.events.Events;
@@ -136,6 +138,27 @@ public class CandidatService {
         return CandidatDto.of(c);
     }
 
+    /** Consentements du candidat connecté : retirer la présentation efface la date de consentement. */
+    public CandidatDto mesConsentements(ConsentementsRequest req) {
+        Candidat c = monCandidat();
+        if (req.presentation() != null) {
+            if (req.presentation() && c.getConsentementLe() == null) {
+                c.setConsentementLe(LocalDate.now());
+            } else if (!req.presentation()) {
+                c.setConsentementLe(null);
+            }
+        }
+        if (req.vivier() != null) {
+            c.setConsentementVivier(req.vivier());
+        }
+        if (req.actualites() != null) {
+            c.setConsentementActualites(req.actualites());
+        }
+        candidats.save(c);
+        publier(Events.CANDIDAT_MODIFIE, c);
+        return CandidatDto.of(c);
+    }
+
     /** Droit à l'effacement : le profil est anonymisé et le CV supprimé. */
     public void supprimerMonProfil() {
         Candidat c = monCandidat();
@@ -150,7 +173,11 @@ public class CandidatService {
         c.setCvNomFichier(null);
         c.getExperiences().clear();
         c.setAnonymise(true);
+        c.setConsentementLe(null);
+        c.setConsentementVivier(false);
+        c.setConsentementActualites(false);
         notes.deleteAll(notes.findByCandidatIdOrderByCreatedAtDesc(c.getId()));
+        events.publier(Topics.CANDIDAT, Events.CANDIDAT_ANONYMISE, c.getId(), new CandidatAnonymiseEvent(c.getId()));
     }
 
     public CandidatDto deposerCv(UUID id, MultipartFile fichier) {

@@ -64,9 +64,18 @@ public class ReunionsListener {
     void proposee(ReunionEvent e) {
         String creneaux = e.creneaux().stream().map(d -> "  • " + quand(d)).collect(Collectors.joining("\n"));
         String avec = "ENTRETIEN_CLIENT".equals(e.nature()) && e.entrepriseNom() != null ? e.entrepriseNom() : "Votre recruteur";
+        String lien = "%s/candidat/reunions/%s".formatted(front, e.reunionId());
+        List<Mise.Info> infosCreneaux = new java.util.ArrayList<>();
+        for (int i = 0; i < e.creneaux().size(); i++) {
+            infosCreneaux.add(new Mise.Info("Créneau " + (i + 1), quand(e.creneaux().get(i))));
+        }
+        infosCreneaux.add(new Mise.Info("Format", "%s · %d min".formatted(type(e.type()), e.dureeMinutes())));
         notifier.notifier(e.candidatEmail(), Events.REUNION_PROPOSEE, "Entretien proposé : " + e.missionIntitule(),
-                "%s vous propose un entretien (%s, %d min) pour « %s ». Créneaux proposés :%n%s%n%nChoisissez celui qui vous convient : %s/candidat/reunions/%s"
-                        .formatted(avec, type(e.type()), e.dureeMinutes(), e.missionIntitule(), creneaux, front, e.reunionId()));
+                "%s vous propose un entretien (%s, %d min) pour « %s ». Créneaux proposés :%n%s%n%nChoisissez celui qui vous convient : %s"
+                        .formatted(avec, type(e.type()), e.dureeMinutes(), e.missionIntitule(), creneaux, lien),
+                new Mise("Bonne nouvelle", List.of("%s souhaite vous rencontrer pour le poste « %s ». Choisissez le créneau qui vous convient."
+                        .formatted(avec, e.missionIntitule())), infosCreneaux, new Mise.Action("Choisir mon créneau", lien),
+                        "Aucun créneau ne vous convient ? Indiquez-le depuis le même lien : votre recruteur vous rappelle."));
         for (String email : autres(e.participants(), e.candidatEmail())) {
             notifier.notifier(email, Events.REUNION_PROPOSEE, "Créneaux envoyés à " + e.candidatNom(),
                     "%d créneau(x) proposé(s) à %s pour « %s » :%n%s%nVous recevrez l'invitation dès son choix."
@@ -82,10 +91,21 @@ public class ReunionsListener {
             boolean candidat = email.equalsIgnoreCase(e.candidatEmail());
             String titre = candidat ? "Entretien confirmé : " + e.missionIntitule()
                     : "Entretien confirmé avec " + e.candidatNom();
+            List<Mise.Info> infos = new java.util.ArrayList<>(List.of(
+                    new Mise.Info("Quand", quand(e.debut())),
+                    new Mise.Info("Format", type(e.type()))));
+            if (e.lieu() != null) {
+                infos.add(new Mise.Info("Lieu", e.lieu()));
+            }
             notifier.notifier(email, Events.REUNION_CONFIRMEE, titre,
                     "Entretien (%s) avec %s pour « %s » le %s, %s.%s%n%nL'invitation est jointe à cet e-mail (fichier .ics) : ouvrez-la pour l'ajouter à votre agenda."
                             .formatted(type(e.type()).toLowerCase(Locale.FRENCH), e.candidatNom(), e.missionIntitule(),
-                                    quand(e.debut()), e.lieu(), visio), ics);
+                                    quand(e.debut()), e.lieu(), visio), ics,
+                    new Mise("Entretien confirmé", List.of(candidat
+                            ? "Votre entretien pour « %s » est confirmé.".formatted(e.missionIntitule())
+                            : "%s a confirmé l'entretien pour « %s ».".formatted(e.candidatNom(), e.missionIntitule())),
+                            infos, e.lienVisio() == null ? null : new Mise.Action("Rejoindre la visio", e.lienVisio()),
+                            "L'invitation est jointe (fichier .ics) : ouvrez-la pour l'ajouter à votre agenda. Rappels par e-mail la veille et par SMS 2 h avant."));
         }
     }
 
@@ -102,7 +122,12 @@ public class ReunionsListener {
         for (String email : e.participants()) {
             notifier.notifier(email, Events.REUNION_RAPPEL, "Rappel : entretien " + quand(e.debut()),
                     "Rappel : entretien avec %s pour « %s » le %s (%s).%s"
-                            .formatted(e.candidatNom(), e.missionIntitule(), quand(e.debut()), e.lieu(), visio));
+                            .formatted(e.candidatNom(), e.missionIntitule(), quand(e.debut()), e.lieu(), visio),
+                    new Mise("Rappel", List.of("Votre entretien pour « %s » a lieu bientôt.".formatted(e.missionIntitule())),
+                            List.of(new Mise.Info("Quand", quand(e.debut())), new Mise.Info("Avec", e.candidatNom()),
+                                    new Mise.Info("Lieu", e.lieu() == null ? "—" : e.lieu())),
+                            e.lienVisio() == null ? null : new Mise.Action("Rejoindre la visio", e.lienVisio()),
+                            "Un empêchement ? Prévenez votre recruteur au plus vite pour proposer un autre créneau."));
         }
     }
 

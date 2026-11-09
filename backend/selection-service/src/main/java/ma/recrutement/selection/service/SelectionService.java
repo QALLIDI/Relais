@@ -16,6 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 import ma.recrutement.common.events.CandidatPlaceEvent;
 import ma.recrutement.common.events.EvenementsRecus;
 import ma.recrutement.common.events.EventPublisher;
+import ma.recrutement.common.events.CandidatAnonymiseEvent;
+import ma.recrutement.common.events.CandidaturesClosesEvent;
+import ma.recrutement.common.events.MissionAnnuleeEvent;
 import ma.recrutement.common.events.Events;
 import ma.recrutement.common.events.Topics;
 import ma.recrutement.common.events.RetourClientEvent;
@@ -248,6 +251,54 @@ public class SelectionService {
             throw new AccessDeniedException("Ce candidat ne vous a pas été présenté");
         }
         return ContexteReunionDto.of(c);
+    }
+
+    // ---------------- Missions annulées (événements d'entreprise-service) ----------------
+
+    @KafkaListener(topics = Topics.ENTREPRISE)
+    public void recevoirEntreprise(ConsumerRecord<String, String> message) {
+        if (Events.MISSION_ANNULEE.equals(recus.type(message))) {
+            recus.traiter(message, MissionAnnuleeEvent.class, this::surMissionAnnulee);
+        }
+    }
+
+    /** Mission annulée : les candidatures encore en cours sont retirées et leurs candidats prévenus. */
+    void surMissionAnnulee(MissionAnnuleeEvent e) {
+        List<String> emails = new java.util.ArrayList<>();
+        for (Candidature c : candidatures.findByMissionIdOrderByScoreDesc(e.missionId())) {
+            if (!c.getEtape().estSortie() && c.getEtape() != Etape.PLACE) {
+                c.setMotifSortie("Mission annulée");
+                c.passerA(Etape.RETIRE);
+                if (c.getCandidatEmail() != null && !c.getCandidatEmail().isBlank()) {
+                    emails.add(c.getCandidatEmail());
+                }
+            }
+        }
+        if (!emails.isEmpty()) {
+            events.publier(Topics.SELECTION, Events.CANDIDATURES_CLOSES, e.missionId(),
+                    new CandidaturesClosesEvent(e.missionId(), e.intitule(), emails));
+        }
+    }
+
+    // ---------------- Profils supprimés (événements de candidat-service) ----------------
+
+    @KafkaListener(topics = Topics.CANDIDAT)
+    public void recevoirCandidat(ConsumerRecord<String, String> message) {
+        if (Events.CANDIDAT_ANONYMISE.equals(recus.type(message))) {
+            recus.traiter(message, CandidatAnonymiseEvent.class, this::surCandidatAnonymise);
+        }
+    }
+
+    /** Droit à l'effacement : la copie de l'identité est anonymisée et les candidatures en cours sont retirées. */
+    void surCandidatAnonymise(CandidatAnonymiseEvent e) {
+        for (Candidature c : candidatures.findByCandidatIdOrderByUpdatedAtDesc(e.candidatId())) {
+            c.setCandidatNom("Candidat anonymisé");
+            c.setCandidatEmail(null);
+            if (!c.getEtape().estSortie() && c.getEtape() != Etape.PLACE) {
+                c.setMotifSortie("Profil supprimé par le candidat");
+                c.passerA(Etape.RETIRE);
+            }
+        }
     }
 
     // ---------------- Réunions (événements d'agenda-service) ----------------

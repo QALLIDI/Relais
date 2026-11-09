@@ -2,15 +2,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { api, messageErreur, telecharger } from '../../api/client';
-import { dateCourte, dateFr, initiales, kmad } from '../../api/format';
-import type { Candidat, Candidature, Mission, Note } from '../../api/types';
-import { Chargement, Erreur, Pill, Score } from '../../components/ui';
+import { dateCourte, dateFr, initiales, n } from '../../api/format';
+import type { Candidat, Candidature, Etape, Mission, Note } from '../../api/types';
+import { versFenetre } from '../../components/Fenetre';
+import { useFilAriane } from '../../components/Layouts';
+import { Chargement, Erreur, Icone, Indicateur, Score } from '../../components/ui';
+
+const ORDRE: Etape[] = ['SOURCE', 'QUALIFIE', 'ENTRETIEN_RECRUTEUR', 'PRESENTE', 'ENTRETIEN_CLIENT', 'OFFRE', 'PLACE'];
+const SHORTLISTABLES: Etape[] = ['QUALIFIE', 'ENTRETIEN_RECRUTEUR'];
 
 export default function FicheCandidat() {
   const { id = '' } = useParams();
   const qc = useQueryClient();
   const [note, setNote] = useState('');
   const [missionChoisie, setMissionChoisie] = useState('');
+  const [onglet, setOnglet] = useState<'Parcours' | 'Candidatures' | 'Notes'>('Parcours');
   const candidat = useQuery({ queryKey: ['candidat', id], queryFn: async () => (await api.get<Candidat>(`/api/candidats/${id}`)).data });
   const notes = useQuery({ queryKey: ['notes', id], queryFn: async () => (await api.get<Note[]>(`/api/candidats/${id}/notes`)).data });
   const candidatures = useQuery({ queryKey: ['candidatures', id], queryFn: async () => (await api.get<Candidature[]>('/api/candidatures', { params: { candidatId: id } })).data });
@@ -33,135 +39,174 @@ export default function FicheCandidat() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['candidat', id] }),
   });
 
+  useFilAriane(candidat.data ? [{ label: 'Vivier', to: '/recruteur/vivier' }, { label: candidat.data.nomComplet }] : null);
+  const envoyer = useMutation({
+    mutationFn: (x: Candidature) => api.post('/api/shortlists', { missionId: x.missionId, candidatureIds: [x.id] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['candidatures', id] }),
+  });
+
   if (candidat.isLoading) return <Chargement />;
   if (candidat.error || !candidat.data) return <Erreur message={messageErreur(candidat.error)} />;
   const c = candidat.data;
   const dejaDans = new Set(candidatures.data?.map((x) => x.missionId));
-  const meilleure = [...(candidatures.data ?? [])].sort((a, b) => b.score - a.score)[0];
-  const erreur = ajouterNote.error ?? ajouterMission.error ?? deposerCv.error;
+  const actives = (candidatures.data ?? []).filter((x) => x.etape !== 'REFUSE' && x.etape !== 'RETIRE');
+  const meilleure = [...actives].sort((a, b) => b.score - a.score)[0];
+  const erreur = ajouterNote.error ?? ajouterMission.error ?? deposerCv.error ?? envoyer.error;
+  const rang = meilleure ? ORDRE.indexOf(meilleure.etape) : -1;
+  const mission = missions.data?.find((m) => m.id === meilleure?.missionId);
+  const dansBudget = mission?.salaireMax && c.pretentionSalaire ? c.pretentionSalaire <= mission.salaireMax * 12 || c.pretentionSalaire <= mission.salaireMax : undefined;
+  const etapes = [
+    { titre: 'Préqualification', fait: rang >= ORDRE.indexOf('QUALIFIE'), detail: 'Appel de qualification' },
+    { titre: 'Entretien recruteur', fait: rang >= ORDRE.indexOf('ENTRETIEN_RECRUTEUR'), detail: meilleure?.noteGlobale ? `Évaluation ${meilleure.noteGlobale}/5` : 'À planifier' },
+    { titre: 'Présenté au client', fait: rang >= ORDRE.indexOf('PRESENTE'), detail: meilleure?.presenteLe ? `Le ${dateCourte(meilleure.presenteLe)}` : 'Pas encore' },
+  ];
 
   return (
     <>
-      <div className="grid-3">
-        <section className="card hero span-2 row" style={{ alignItems: 'center', gap: 24, padding: 26 }}>
-          <span style={{ width: 120, height: 120, flex: '0 0 120px', borderRadius: '50%', background: 'radial-gradient(circle at 30% 30%, #A99BFF, #5B4CDB)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, fontWeight: 600, boxShadow: '0 18px 40px rgba(91,76,219,0.3)' }} aria-hidden="true">
-            {initiales(c.nomComplet)}
-          </span>
-          <div className="stack" style={{ flex: '1 1 280px', gap: 8 }}>
-            <div className="crumbs"><Link to="/recruteur/vivier">Vivier</Link><span>/</span><span>Fiche candidat</span></div>
+      <section className="tete-page">
+        <div className="tete-personne">
+          <span className="avatar lavande-av" aria-hidden="true">{initiales(c.nomComplet)}</span>
+          <div>
             <h1>{c.nomComplet}</h1>
-            <div style={{ fontSize: 16, color: 'var(--ink-2)' }}>{[c.titre, `${c.anneesExperience} ans`, c.ville].filter(Boolean).join(' · ')}</div>
-            <div className="chips">
-              <span className="chip" style={{ color: c.disponibilite === 'TROIS_MOIS' ? 'var(--warn)' : 'var(--ok)' }}>● {c.disponibiliteLibelle}</span>
-              {c.niveauLibelle && <span className="chip">{c.niveauLibelle}</span>}
-              {c.source && <span className="chip">Source : {c.source}</span>}
-              <span className="chip">{c.consentementLe ? `Consentement du ${dateFr(c.consentementLe)}` : 'Consentement manquant'}</span>
-            </div>
+            <p className="sous">{[c.titre, `${c.anneesExperience} ans d'expérience`, c.ville, c.disponibiliteLibelle ? `disponibilité ${c.disponibiliteLibelle.toLowerCase()}` : null].filter(Boolean).join(' · ')}</p>
           </div>
-          <div className="stack" style={{ gap: 8 }}>
-            {c.cvDisponible && <button className="btn primary" onClick={() => telecharger(`/api/candidats/${id}/cv`, c.cvNomFichier ?? 'cv')}>Télécharger le CV</button>}
-            <label className={`btn ${c.cvDisponible ? '' : 'primary'}`} style={{ background: c.cvDisponible ? 'var(--surface)' : undefined }}>
-              {c.cvDisponible ? 'Remplacer le CV' : 'Déposer le CV'}
-              <input type="file" accept=".pdf,.doc,.docx" hidden onChange={(e) => e.target.files?.[0] && deposerCv.mutate(e.target.files[0])} />
-            </label>
-          </div>
-        </section>
-
-        <section className="card accent" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
-          <div className="card-head" style={{ margin: 0, alignItems: 'flex-start' }}>
-            <h2 style={{ fontSize: 20, fontWeight: 400, lineHeight: 1.2 }}>Meilleure<br />correspondance</h2>
-            {meilleure && <span className="pill veil">{meilleure.entrepriseNom}</span>}
-          </div>
-          {meilleure ? (
-            <>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
-                <span className="big" style={{ fontSize: 72 }}>{meilleure.score}</span>
-                <span style={{ fontSize: 14, paddingBottom: 10 }}>% avec<br />{meilleure.missionIntitule}</span>
-              </div>
-              <Link to={`/recruteur/missions/${meilleure.missionId}`} className="box" style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13, textDecoration: 'none', color: 'var(--ink)' }}>
-                <span>Étape actuelle</span><b>{meilleure.etapeLibelle}</b>
-              </Link>
-            </>
-          ) : (
-            <p style={{ margin: 0 }}>Dans aucun pipeline pour l'instant. Ajoutez ce profil à une mission ouverte.</p>
+        </div>
+        <div className="actions">
+          <Link className="btn primary" to={versFenetre('planifier', meilleure ? { candidature: meilleure.id, nom: c.nomComplet, mission: meilleure.missionIntitule } : { nom: c.nomComplet })}>
+            <Icone nom="agenda" taille={16} />Planifier
+          </Link>
+          {meilleure && SHORTLISTABLES.includes(meilleure.etape) && (
+            <button className="btn primary" disabled={envoyer.isPending} onClick={() => envoyer.mutate(meilleure)}>Envoyer en shortlist</button>
           )}
-        </section>
-      </div>
+        </div>
+      </section>
       {erreur && <Erreur message={messageErreur(erreur)} />}
 
-      <div className="grid-3">
-        <div className="stack" style={{ gap: 16 }}>
-          <section className="card stack" style={{ gap: 14 }}>
-            <h2>Compétences</h2>
-            <div className="tags">{c.competences.map((t) => <span key={t} className="tag" style={{ fontSize: 13, padding: '5px 12px' }}>{t}</span>)}</div>
-            {c.langues && <div className="muted small">Langues : {c.langues}</div>}
+      <div className="tableau-bord">
+        <div className="colonne-gauche">
+          <section className="indicateurs" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+            <Indicateur label="Qualification" valeur={meilleure?.noteGlobale ? `${String(meilleure.noteGlobale).replace('.', ',')} / 5` : '—'} note={meilleure?.noteGlobale ? 'Note de l’entretien recruteur' : 'Pas encore évalué'} ton="lavande" />
+            <Indicateur label="Correspondance" valeur={meilleure ? `${meilleure.score} %` : '—'} note={meilleure ? `avec ${meilleure.missionIntitule}` : 'Dans aucun pipeline'} />
+            <Indicateur label="Prétentions" valeur={c.pretentionSalaire != null ? n(c.pretentionSalaire) : '—'} unite={c.pretentionSalaire != null ? 'MAD' : undefined}
+              note={dansBudget === undefined ? 'brut' : dansBudget ? 'dans le budget client' : 'au-dessus du budget client'} ton="vert" />
           </section>
-          <section className="card stack">
-            <h2>Candidatures</h2>
-            {candidatures.data?.length === 0 && <p className="muted" style={{ margin: 0 }}>Dans aucun pipeline.</p>}
-            {candidatures.data?.map((x) => (
-              <Link key={x.id} to={`/recruteur/missions/${x.missionId}`} className="tile" style={{ textDecoration: 'none' }}>
-                <span style={{ flex: '1 1 140px', minWidth: 0 }}><b>{x.missionIntitule}</b><br /><span className="muted small">{x.entrepriseNom}</span></span>
-                <span className="actions" style={{ gap: 6 }}><Score value={x.score} /><Pill tone="info">{x.etapeLibelle}</Pill></span>
-              </Link>
-            ))}
-            <div className="actions">
-              <select className="input" aria-label="Mission" value={missionChoisie} onChange={(e) => setMissionChoisie(e.target.value)} style={{ flex: '1 1 160px', minWidth: 0 }}>
-                <option value="">Ajouter à une mission…</option>
-                {missions.data?.filter((m) => m.statut === 'OUVERTE' && !dejaDans.has(m.id)).map((m) => (
-                  <option key={m.id} value={m.id}>{m.intitule} · {m.entrepriseNom}</option>
+
+          {meilleure && (
+            <section aria-labelledby="etapes">
+              <h2 id="etapes" className="titre-section">Étapes · {meilleure.missionIntitule}</h2>
+              <div className="etapes-fiche">
+                {etapes.map((e, i) => (
+                  <div key={e.titre} className={`etape-fiche ${e.fait ? 'faite' : ''} ${i === 0 && e.fait ? 'lavande' : ''}`}>
+                    <span className="rond" aria-hidden="true">{e.fait ? '✓' : i + 1}</span>
+                    <span><b>{e.titre}</b><span>{e.fait ? (i === 0 ? 'Faite' : e.detail) : e.detail}</span></span>
+                  </div>
                 ))}
-              </select>
-              <button className="btn primary" disabled={!missionChoisie || ajouterMission.isPending} onClick={() => ajouterMission.mutate()}>Ajouter</button>
+              </div>
+            </section>
+          )}
+
+          <section className="bloc">
+            <div className="bloc-tete">
+              <div className="filtres" role="tablist" aria-label="Détails du candidat">
+                {(['Parcours', 'Candidatures', 'Notes'] as const).map((o) => (
+                  <button key={o} type="button" role="tab" aria-selected={onglet === o} aria-pressed={onglet === o} onClick={() => setOnglet(o)}>
+                    {o}{o === 'Notes' && notes.data?.length ? <span className="nb">{notes.data.length}</span> : null}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {onglet === 'Parcours' && (
+              c.experiences.length === 0 ? <div className="bloc-corps"><p className="muted">Aucune expérience renseignée.</p></div> : (
+                <div className="table-wrap">
+                  <table style={{ minWidth: 560 }}>
+                    <thead><tr><th>Période</th><th>Poste</th><th>Employeur</th><th>Missions</th></tr></thead>
+                    <tbody>
+                      {c.experiences.map((x, i) => (
+                        <tr key={i}><td className="muted" style={{ whiteSpace: 'nowrap' }}>{x.periode}</td><td style={{ fontWeight: 500 }}>{x.poste}</td><td>{x.employeur}</td><td className="muted">{x.description}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            )}
+
+            {onglet === 'Candidatures' && (
+              <div className="bloc-corps">
+                {candidatures.data?.length === 0 && <p className="muted" style={{ marginTop: 0 }}>Dans aucun pipeline.</p>}
+                {candidatures.data?.map((x) => (
+                  <Link key={x.id} to={`/recruteur/missions/${x.missionId}`} className="echeance">
+                    <span className="mono-av grand" aria-hidden="true">{initiales(x.entrepriseNom)}</span>
+                    <span className="txt"><b>{x.missionIntitule}</b><span>{x.entrepriseNom}</span></span>
+                    <Score value={x.score} />
+                    <span className="etat-carte">{x.etapeLibelle}</span>
+                  </Link>
+                ))}
+                <div className="actions" style={{ marginTop: 12 }}>
+                  <select className="input" aria-label="Mission" value={missionChoisie} onChange={(e) => setMissionChoisie(e.target.value)} style={{ flex: '1 1 200px', minWidth: 0 }}>
+                    <option value="">Ajouter à une mission…</option>
+                    {missions.data?.filter((m) => m.statut === 'OUVERTE' && !dejaDans.has(m.id)).map((m) => (
+                      <option key={m.id} value={m.id}>{m.intitule} · {m.entrepriseNom}</option>
+                    ))}
+                  </select>
+                  <button className="btn primary" disabled={!missionChoisie || ajouterMission.isPending} onClick={() => ajouterMission.mutate()}>Ajouter</button>
+                </div>
+              </div>
+            )}
+
+            {onglet === 'Notes' && (
+              <div className="bloc-corps stack">
+                {notes.data?.length === 0 && <p className="muted" style={{ margin: 0 }}>Aucune note pour l'instant. Les notes ne sont jamais visibles du client.</p>}
+                {notes.data?.map((x) => (
+                  <div key={x.id} className="note-ligne">
+                    <span className="muted small">{dateCourte(x.createdAt)}{x.auteur ? ` · ${x.auteur}` : ''}</span>
+                    <p>{x.texte}</p>
+                  </div>
+                ))}
+                <form className="saisie-note" onSubmit={(e) => { e.preventDefault(); if (note.trim()) ajouterNote.mutate(); }}>
+                  <label htmlFor="note" className="sr-only">Ajouter une note privée</label>
+                  <input id="note" placeholder="Ajouter une note privée…" value={note} onChange={(e) => setNote(e.target.value)} />
+                  <button type="submit" className="btn small primary" disabled={!note.trim() || ajouterNote.isPending}>Enregistrer</button>
+                </form>
+              </div>
+            )}
           </section>
         </div>
 
-        <section className="card">
-          <h2 style={{ marginBottom: 14 }}>Parcours</h2>
-          {c.experiences.length === 0 && <p className="muted">Aucune expérience renseignée.</p>}
-          {c.experiences.map((x, i) => (
-            <div key={i} style={{ display: 'flex', gap: 14 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} aria-hidden="true">
-                <span style={{ width: 14, height: 14, borderRadius: '50%', background: i === 0 ? 'var(--accent)' : 'var(--ink)' }} />
-                {i < c.experiences.length - 1 && <span style={{ flex: 1, width: 2, background: 'var(--line)', minHeight: 40 }} />}
-              </div>
-              <div style={{ paddingBottom: 16 }}>
-                <div className="muted small">{x.periode}</div>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{[x.poste, x.employeur].filter(Boolean).join(' · ')}</div>
-                {x.description && <div className="small" style={{ color: 'var(--ink-2)' }}>{x.description}</div>}
-              </div>
+        <div className="colonne-droite">
+          <section className="bloc">
+            <div className="bloc-tete"><h2>Contact</h2></div>
+            <div className="bloc-corps infos">
+              {c.email && <a href={`mailto:${c.email}`}>{c.email}</a>}
+              {c.telephone && <a href={`tel:${c.telephone.replace(/\s/g, '')}`}>{c.telephone}</a>}
+              <span className="muted">{[c.mobilite ? `Mobilité : ${c.mobilite}` : null, c.langues ? `Langues : ${c.langues}` : null].filter(Boolean).join(' · ') || 'Aucune précision'}</span>
             </div>
-          ))}
-        </section>
-
-        <div className="stack" style={{ gap: 16 }}>
-          <section className="card" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <div><div className="muted small">Prétentions</div><div style={{ fontSize: 24, fontWeight: 500 }}>{c.pretentionSalaire != null ? `${kmad(c.pretentionSalaire)} k` : '—'}</div><div className="muted small">MAD brut/an</div></div>
-            <div><div className="muted small">Secteur</div><div style={{ fontSize: 16, fontWeight: 500 }}>{c.secteur ?? '—'}</div></div>
-            <div><div className="muted small">Mobilité</div><div style={{ fontSize: 16, fontWeight: 500 }}>{c.mobilite ?? '—'}</div></div>
-            <div style={{ minWidth: 0 }}><div className="muted small">Contact</div><div style={{ fontSize: 14, fontWeight: 500, overflowWrap: 'anywhere' }}>{c.email ?? '—'}</div><div className="muted small">{c.telephone}</div></div>
           </section>
-          <section className="card night stack" style={{ gap: 10, padding: 20 }}>
-            <div className="card-head" style={{ margin: 0 }}>
-              <h2 style={{ fontSize: 17, fontWeight: 400 }}>Notes privées</h2>
-              {notes.data?.[0] && <span className="pill veil">{dateCourte(notes.data[0].createdAt)}</span>}
+          <section className="bloc">
+            <div className="bloc-tete"><h2>Compétences</h2></div>
+            <div className="bloc-corps tags">{c.competences.map((t) => <span key={t} className="tag">{t}</span>)}</div>
+          </section>
+          <section className="bloc">
+            <div className="bloc-tete"><h2>Documents</h2></div>
+            <div className="bloc-corps stack" style={{ gap: 8 }}>
+              {c.cvDisponible ? (
+                <button type="button" className="document" onClick={() => telecharger(`/api/candidats/${id}/cv`, c.cvNomFichier ?? 'cv')}>
+                  <span className="mono-av"><Icone nom="facture" taille={14} /></span><span className="txt">CV · {c.cvNomFichier ?? 'cv'}</span><span className="muted small">Télécharger</span>
+                </button>
+              ) : <p className="muted small" style={{ margin: 0 }}>Aucun CV déposé.</p>}
+              <label className="document">
+                <span className="mono-av"><Icone nom="plus" taille={14} /></span><span className="txt">{c.cvDisponible ? 'Remplacer le CV' : 'Déposer le CV'}</span><span className="muted small">PDF, Word</span>
+                <input type="file" accept=".pdf,.doc,.docx" hidden onChange={(e) => e.target.files?.[0] && deposerCv.mutate(e.target.files[0])} />
+              </label>
             </div>
-            {notes.data?.length === 0 && <div className="small" style={{ opacity: 0.75 }}>Aucune note pour l'instant.</div>}
-            {notes.data?.map((n) => (
-              <div key={n.id} className="small" style={{ lineHeight: 1.5 }}>
-                <div style={{ opacity: 0.65, marginBottom: 2 }}>{dateCourte(n.createdAt)}{n.auteur ? ` · ${n.auteur}` : ''}</div>
-                {n.texte}
-              </div>
-            ))}
-            <form onSubmit={(e) => { e.preventDefault(); if (note.trim()) ajouterNote.mutate(); }}
-              style={{ display: 'flex', gap: 8, alignItems: 'center', background: 'rgba(255,255,255,0.08)', borderRadius: 999, padding: '6px 6px 6px 14px' }}>
-              <label htmlFor="note" className="sr-only">Ajouter une note</label>
-              <input id="note" placeholder="Ajouter une note…" value={note} onChange={(e) => setNote(e.target.value)}
-                style={{ flex: 1, minWidth: 0, border: 0, background: 'transparent', color: '#fff', font: 'inherit', fontSize: 13 }} />
-              <button type="submit" aria-label="Enregistrer la note" disabled={!note.trim() || ajouterNote.isPending}
-                style={{ width: 32, height: 32, borderRadius: '50%', border: 0, background: 'var(--accent-strong)', color: '#fff', cursor: 'pointer' }}>↑</button>
-            </form>
+          </section>
+          <section className="bloc">
+            <div className="bloc-tete"><h2>Consentements</h2></div>
+            <div className="bloc-corps infos">
+              <span className="ligne-entre"><span>Profil présenté aux entreprises</span><span className={`oui-non ${c.consentementLe ? 'oui' : ''}`}>{c.consentementLe ? 'Oui' : 'Non'}</span></span>
+              <span className="ligne-entre"><span>Rester dans le vivier</span><span className={`oui-non ${c.consentementLe ? 'oui' : ''}`}>{c.consentementLe ? 'Oui' : 'Non'}</span></span>
+              <span className="muted small">{c.consentementLe ? `Donné le ${dateFr(c.consentementLe)}${c.source ? ` · source : ${c.source}` : ''}` : 'Consentement manquant : ne pas présenter ce profil.'}</span>
+            </div>
           </section>
         </div>
       </div>

@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
 import { api, messageErreur } from '../api/client';
 import { fmtJourLong, libelleDecision, useReunion } from '../api/reunions';
 import type { DecisionEntretien, ProfilPresente } from '../api/types';
+import { Annuler, Fenetre } from '../components/Fenetre';
 import { Chargement, Erreur } from '../components/ui';
 
 type Critere = 'technique' | 'communication' | 'motivation' | 'adequationEquipe';
@@ -15,12 +15,10 @@ const CRITERES: [Critere, string, string][] = [
 ];
 const DECISIONS: DecisionEntretien[] = ['RETENIR', 'SECOND_ENTRETIEN', 'NE_PAS_RETENIR'];
 
-/** Grille d'évaluation après entretien (maquette EmberEvaluation), commune à tous les entretiens. */
-export default function Evaluation({ espace }: { espace: 'recruteur' | 'entreprise' }) {
-  const { id = '' } = useParams();
-  const navigate = useNavigate();
+/** Modale « Évaluer l'entretien » : grille commune à tous les entretiens, ouverte depuis la liste des entretiens ou l'agenda. */
+export default function ModaleEvaluation({ reunionId, onFermer }: { reunionId: string; onFermer: () => void }) {
   const qc = useQueryClient();
-  const reunion = useReunion(id);
+  const reunion = useReunion(reunionId);
   const r = reunion.data;
   const shortlist = useQuery({
     queryKey: ['shortlist', r?.missionId],
@@ -31,69 +29,64 @@ export default function Evaluation({ espace }: { espace: 'recruteur' | 'entrepri
   const [notes, setNotes] = useState<Record<Critere, number>>({ technique: 0, communication: 0, motivation: 0, adequationEquipe: 0 });
   const [decision, setDecision] = useState<DecisionEntretien | null>(null);
   const [commentaire, setCommentaire] = useState('');
-  const retour = espace === 'entreprise' ? '/entreprise/entretiens' : '/recruteur/agenda';
 
   const envoyer = useMutation({
-    mutationFn: () => api.post(`/api/reunions/${id}/evaluation`, { ...notes, decision, commentaire: commentaire || undefined }),
+    mutationFn: () => api.post(`/api/reunions/${reunionId}/evaluation`, { ...notes, decision, commentaire: commentaire || undefined }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['reunions'] });
       void qc.invalidateQueries({ queryKey: ['shortlist'] });
       void qc.invalidateQueries({ queryKey: ['selection'] });
-      navigate(retour);
+      onFermer();
     },
   });
-
-  if (reunion.isLoading) return <main className="page"><Chargement /></main>;
-  if (reunion.error || !r) return <main className="page"><Erreur message={messageErreur(reunion.error)} /></main>;
 
   const donnees = Object.values(notes).filter((v) => v > 0);
   const moyenne = donnees.length ? (donnees.reduce((a, b) => a + b, 0) / donnees.length).toFixed(1).replace('.', ',') : '—';
   const complet = donnees.length === 4 && !!decision;
+  const modifie = donnees.length > 0 || !!decision || !!commentaire;
 
   return (
-    <main className="page">
-      <section className="header">
-        <div>
-          <div className="crumbs"><Link to={retour}>Entretiens</Link><span>/</span><span>Entretien du {r.debut ? fmtJourLong(r.debut) : '—'} · {r.missionIntitule}</span></div>
-          <h1>Évaluer {r.candidatNom}</h1>
-        </div>
-        <span className="chip" style={{ padding: '12px 18px', fontSize: 14 }}>Grille commune à tous les entretiens</span>
-      </section>
-      {r.evaluation && <div className="alert info">Cet entretien a déjà été évalué ({libelleDecision[r.evaluation.decision].toLowerCase()}).</div>}
+    <Fenetre largeur={560} onFermer={onFermer} modifie={modifie}
+      titre={r ? `Évaluer l’entretien avec ${r.candidatNom}` : 'Évaluer l’entretien'}
+      sousTitre={r ? `${r.debut ? `Entretien du ${fmtJourLong(r.debut)} · ` : ''}${r.missionIntitule ?? ''} · grille commune à toute l’équipe` : undefined}
+      pied={<>
+        <Annuler onClick={onFermer} />
+        <button type="button" className="btn primary" disabled={!complet || !!r?.evaluation || envoyer.isPending} onClick={() => envoyer.mutate()}>Envoyer mon avis</button>
+      </>}>
+      {reunion.isLoading && <Chargement />}
+      {reunion.error && <Erreur message={messageErreur(reunion.error)} />}
+      {r?.evaluation && <div className="encadre">Cet entretien a déjà été évalué ({libelleDecision[r.evaluation.decision].toLowerCase()}).</div>}
       {envoyer.error && <Erreur message={messageErreur(envoyer.error)} />}
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))', gap: 16, alignItems: 'start' }}>
-        <section className="card stack" style={{ gap: 4 }}>
+      {r && (
+        <>
+          <div className="row" style={{ gap: 8 }}>
+            <span className="chip">Votre moyenne <b>{moyenne} / 5</b></span>
+            <span className="chip">Note du recruteur <b>{profil?.noteGlobale ? `${profil.noteGlobale} / 5` : '—'}</b></span>
+            <span className="chip">{r.typeLibelle} · {r.dureeMinutes} min</span>
+          </div>
           {CRITERES.map(([k, nom, aide]) => (
-            <div key={k} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12, alignItems: 'center', padding: '14px 0', borderBottom: '1px solid var(--line)' }}>
-              <div><div style={{ fontSize: 17, fontWeight: 500 }}>{nom}</div><div className="muted small">{aide}</div></div>
-              <div className="notes" role="radiogroup" aria-label={nom}>
+            <div key={k} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
+              <div><div style={{ fontWeight: 500 }}>{nom}</div><div className="muted small">{aide}</div></div>
+              <div className="choix" role="radiogroup" aria-label={nom}>
                 {[1, 2, 3, 4, 5].map((v) => (
-                  <button key={v} type="button" role="radio" aria-checked={notes[k] === v} onClick={() => setNotes({ ...notes, [k]: v })}>{v}</button>
+                  <button key={v} type="button" role="radio" aria-checked={notes[k] === v} style={{ width: 34, padding: 0 }} onClick={() => setNotes({ ...notes, [k]: v })}>{v}</button>
                 ))}
               </div>
             </div>
           ))}
-          <label className="field" style={{ marginTop: 12 }}>Commentaire pour le recruteur
+          <label className="field">Commentaire pour le recruteur
             <textarea rows={3} value={commentaire} onChange={(e) => setCommentaire(e.target.value)} />
           </label>
-          <div className="decision" role="radiogroup" aria-label="Décision" style={{ marginTop: 14 }}>
-            {DECISIONS.map((d) => (
-              <button key={d} type="button" role="radio" className={d === 'RETENIR' ? 'accent' : ''} aria-checked={decision === d} onClick={() => setDecision(d)}>{libelleDecision[d]}</button>
-            ))}
+          <div className="field">Votre décision
+            <div className="decision" role="radiogroup" aria-label="Décision">
+              {DECISIONS.map((d) => (
+                <button key={d} type="button" role="radio" aria-checked={decision === d} onClick={() => setDecision(d)}>{libelleDecision[d]}</button>
+              ))}
+            </div>
           </div>
-          <button type="button" className="btn accent" style={{ marginTop: 14 }} disabled={!complet || !!r.evaluation || envoyer.isPending} onClick={() => envoyer.mutate()}>Envoyer mon avis</button>
-          <div className="muted small" style={{ marginTop: 6 }}>« Second entretien » prévient votre recruteur, qui vous propose aussitôt de nouveaux créneaux. « Retenir » fait passer la candidature à l'offre.</div>
-        </section>
-
-        <section className="card soft stack" style={{ gap: 10 }}>
-          <div className="small" style={{ color: 'var(--ink-2)' }}>Votre note moyenne</div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}><span style={{ fontSize: 64, lineHeight: 1 }}>{moyenne}</span><span style={{ fontSize: 18, color: 'var(--ink-2)' }}>/ 5</span></div>
-          <div className="box" style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--veil)' }}><span>Note du recruteur</span><b style={{ fontWeight: 600 }}>{profil?.noteGlobale ? `${profil.noteGlobale} / 5` : '—'}</b></div>
-          {profil?.synthese && <div className="box small" style={{ background: 'var(--veil)', lineHeight: 1.5 }}>{profil.synthese}</div>}
-          <div className="box" style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--veil)' }}><span>Format</span><b style={{ fontWeight: 600 }}>{r.typeLibelle} · {r.dureeMinutes} min</b></div>
-        </section>
-      </div>
-    </main>
+          <div className="encadre">« Second entretien » prévient votre recruteur, qui vous propose de nouveaux créneaux. « Retenir » fait passer la candidature à l’offre ; la garantie de remplacement s’applique dès l’embauche.</div>
+        </>
+      )}
+    </Fenetre>
   );
 }

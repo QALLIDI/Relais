@@ -44,6 +44,8 @@ export interface Mission {
   competencesRequises: string[];
   competencesSouhaitees: string[];
   createdAt: string;
+  confidentiel?: boolean;
+  motifAnnulation?: string;
 }
 
 export interface MissionRequest {
@@ -62,6 +64,7 @@ export interface MissionRequest {
   competencesRequises: string[];
   competencesSouhaitees: string[];
   statut?: StatutMission;
+  confidentiel?: boolean;
 }
 
 export interface MissionStats {
@@ -103,6 +106,8 @@ export interface Candidat {
   cvDisponible: boolean;
   cvNomFichier?: string;
   createdAt: string;
+  consentementVivier?: boolean;
+  consentementActualites?: boolean;
 }
 
 export interface CandidatResume {

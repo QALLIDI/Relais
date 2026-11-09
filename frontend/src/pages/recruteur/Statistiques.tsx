@@ -56,7 +56,7 @@ export default function Statistiques() {
                 title={`${e.libelle} : ${e.nombre} candidat(s)`}>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.libelle}</span>
                 <div className="barre" style={{ height: 22 }}>
-                  <div style={{ width: `${premier ? Math.round((e.nombre / premier) * 100) : 0}%`, background: i === entonnoir.length - 1 ? 'var(--accent)' : 'var(--ink)' }} />
+                  <div style={{ width: `${premier ? Math.round((e.nombre / premier) * 100) : 0}%`, background: i === entonnoir.length - 1 ? 'var(--accent-strong)' : 'var(--accent)' }} />
                 </div>
                 <b className="mono" style={{ textAlign: 'right' }}>{e.nombre}</b>
                 <span className="muted small" style={{ textAlign: 'right' }}>{conv != null ? `${conv} %` : ''}</span>

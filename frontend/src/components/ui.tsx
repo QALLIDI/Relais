@@ -1,4 +1,5 @@
-import { type ReactNode, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import { Fenetre } from './Fenetre';
 
 type Ton = 'ok' | 'warn' | 'bad' | 'info' | 'neutral';
 
@@ -79,9 +80,66 @@ export function Batons({ donnees, unite, label }: { donnees: { libelle: string; 
   );
 }
 
-/** Pastilles de couleur tournantes pour les avatars et les groupes. */
-export const TEINTES = ['t-peach', 't-violet', 't-blue', 't-green', 't-pink', 't-ink'] as const;
+/** Pastilles de couleur tournantes pour les avatars et les groupes (palette réduite : lavande, menthe, bleu d'action). */
+export const TEINTES = ['t-violet', 't-green', 't-ink'] as const;
 export const teinte = (i: number) => TEINTES[i % TEINTES.length];
+
+/** Mini-courbe remplie (tendance d'un indicateur). */
+export function Sparkline({ valeurs, couleur = 'var(--accent)', fond = 'var(--accent-soft)' }: { valeurs: number[]; couleur?: string; fond?: string }) {
+  const L = 100, H = 34;
+  const max = Math.max(1, ...valeurs), min = Math.min(0, ...valeurs);
+  const pts = valeurs.map((v, i) => [valeurs.length > 1 ? (i / (valeurs.length - 1)) * L : L / 2, H - 3 - ((v - min) / (max - min || 1)) * (H - 8)]);
+  const ligne = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+  return (
+    <svg className="sparkline" viewBox={`0 0 ${L} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+      <path d={`${ligne} L${L} ${H} L0 ${H} Z`} fill={fond} />
+      <path d={ligne} fill="none" stroke={couleur} strokeWidth="1.6" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Carte indicateur des maquettes : pastille, libellé, gros chiffre, note et mini-courbe. */
+export function Indicateur({ label, valeur, unite, note, coin, tendance, ton = 'bleu' }: {
+  label: string; valeur: ReactNode; unite?: string; note?: ReactNode; coin?: string; tendance?: number[]; ton?: 'bleu' | 'vert' | 'lavande' | 'ambre';
+}) {
+  const tons = { bleu: ['var(--accent)', 'var(--accent-soft)'], vert: ['#3aa76d', 'var(--green-bg)'], lavande: ['#7b6fe0', 'var(--violet-bg)'], ambre: ['#d39b2a', 'var(--warn-bg)'] }[ton];
+  return (
+    <div className="indicateur">
+      <div className="indicateur-tete"><span className="point-ton" style={{ background: tons[0] }} />{label}{coin && <span className="coin">{coin}</span>}</div>
+      <div className="indicateur-corps">
+        <div>
+          <div className="valeur">{valeur}{unite && <span className="unite">{unite}</span>}</div>
+          {note && <div className="note">{note}</div>}
+        </div>
+        {tendance && <Sparkline valeurs={tendance} couleur={tons[0]} fond={tons[1]} />}
+      </div>
+    </div>
+  );
+}
+
+/** En-tête de page : titre, phrase d'aide et actions à droite. */
+export function TetePage({ titre, sous, children }: { titre: ReactNode; sous?: ReactNode; children?: ReactNode }) {
+  return (
+    <section className="tete-page">
+      <div>
+        <h1>{titre}</h1>
+        {sous && <p className="sous">{sous}</p>}
+      </div>
+      {children && <div className="actions">{children}</div>}
+    </section>
+  );
+}
+
+/** Contrôle segmenté (filtres de période, d'étape…). */
+export function Segments<T extends string>({ options, valeur, onChange, label }: { options: { v: T; l: string }[]; valeur: T; onChange: (v: T) => void; label: string }) {
+  return (
+    <div className="segments" role="group" aria-label={label}>
+      {options.map((o) => (
+        <button key={o.v} type="button" aria-pressed={valeur === o.v} onClick={() => onChange(o.v)}>{o.l}</button>
+      ))}
+    </div>
+  );
+}
 
 export function Chargement() {
   return <p className="muted">Chargement…</p>;
@@ -95,26 +153,16 @@ export function Vide({ children }: { children: ReactNode }) {
   return <p className="muted">{children}</p>;
 }
 
+/** Modale simple (contenu et boutons fournis par l'appelant), construite sur <Fenetre>. */
 export function Modal({ titre, onClose, children }: { titre: string; onClose: () => void; children: ReactNode }) {
-  useEffect(() => {
-    const fermer = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', fermer);
-    return () => window.removeEventListener('keydown', fermer);
-  }, [onClose]);
-  return (
-    <div className="overlay" onClick={onClose}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label={titre} onClick={(e) => e.stopPropagation()}>
-        <h2>{titre}</h2>
-        {children}
-      </div>
-    </div>
-  );
+  return <Fenetre titre={titre} onFermer={onClose}>{children}</Fenetre>;
 }
 
 export type NomIcone =
   | 'cloche' | 'lune' | 'soleil' | 'fleche' | 'plus' | 'loupe' | 'sortie'
   | 'maison' | 'mallette' | 'groupe' | 'grille' | 'immeuble' | 'facture' | 'stats' | 'agenda' | 'profil' | 'filtre' | 'chevron'
-  | 'check' | 'croix' | 'horloge' | 'tiret' | 'suivant' | 'externe' | 'etincelle';
+  | 'check' | 'croix' | 'horloge' | 'tiret' | 'suivant' | 'externe' | 'etincelle'
+  | 'colonnes' | 'panneau' | 'droite' | 'gauche' | 'reglages' | 'bulle' | 'coche';
 
 export function Icone({ nom, taille = 18 }: { nom: NomIcone; taille?: number }) {
   const chemins: Record<NomIcone, ReactNode> = {
@@ -142,6 +190,13 @@ export function Icone({ nom, taille = 18 }: { nom: NomIcone; taille?: number }) 
     tiret: <><circle cx="12" cy="12" r="9" /><path d="M8 12h8" /></>,
     suivant: <><circle cx="12" cy="12" r="9" /><path d="M10.5 8l4 4-4 4" /></>,
     externe: <path d="M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5" />,
+    colonnes: <><rect x="3" y="4" width="5" height="14" rx="1.5" /><rect x="10" y="4" width="5" height="9" rx="1.5" /><rect x="17" y="4" width="4" height="6" rx="1.5" /></>,
+    panneau: <><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M9 4v16" /></>,
+    droite: <path d="M9 6l6 6-6 6" />,
+    gauche: <path d="M15 6l-6 6 6 6" />,
+    reglages: <><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1" /></>,
+    bulle: <path d="M4 5h16v11H9l-5 4z" />,
+    coche: <><rect x="4" y="4" width="16" height="16" rx="3" /><path d="M8.5 12.5l2.5 2.5 4.5-5" /></>,
     etincelle: <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" />,
   };
   return (

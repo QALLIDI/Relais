@@ -15,14 +15,14 @@ const DIMENSIONS = [
   { cle: 'disponibilite', libelle: 'Disponibilité' },
 ] as const;
 
-/** Fond pastel des cartes de groupe et couleur franche de la barre de répartition, par rang. */
+/** Palette réduite : cartes de groupe neutres, barre de répartition dans les tons du bleu d'action. */
 const PALETTE = [
-  { carte: 'var(--violet-bg)', barre: '#7B6EF0' },
-  { carte: 'var(--peach-bg)', barre: '#C9501E' },
-  { carte: 'var(--blue-bg)', barre: '#2F7DBB' },
-  { carte: 'var(--green-bg)', barre: '#3F7F32' },
-  { carte: 'var(--pink-bg)', barre: '#B8336A' },
-  { carte: 'var(--sunken)', barre: '#17181C' },
+  { carte: 'var(--surface-2)', barre: 'var(--accent-strong)' },
+  { carte: 'var(--surface-2)', barre: '#3b7dc8' },
+  { carte: 'var(--surface-2)', barre: 'var(--accent)' },
+  { carte: 'var(--surface-2)', barre: '#5f9be0' },
+  { carte: 'var(--surface-2)', barre: '#2a63a6' },
+  { carte: 'var(--surface-2)', barre: '#6b6c71' },
 ];
 
 type Personne = { id: string; nom: string; sous: string; dispo?: string };
@@ -117,7 +117,7 @@ export default function Profils() {
               <div style={{ background: 'var(--veil)', borderRadius: 20, padding: '6px 12px' }}>
                 {g.personnes.map((x, i) => (
                   <Link key={`${g.cle}-${x.id}`} to={`/recruteur/vivier/${x.id}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', textDecoration: 'none', borderTop: i ? '1px solid var(--line)' : 0 }}>
-                    <span className={`avatar sq ${TEINTES[5]}`} style={{ width: 32, height: 32, flexBasis: 32, fontSize: 11 }} aria-hidden="true">{initiales(x.nom)}</span>
+                    <span className={`avatar sq ${TEINTES[2]}`} style={{ width: 32, height: 32, flexBasis: 32, fontSize: 11 }} aria-hidden="true">{initiales(x.nom)}</span>
                     <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: 'block', fontSize: 14 }}>{x.nom}</b><span className="muted small">{x.sous}</span></span>
                     <span className="small" style={{ fontWeight: 600, color: x.dispo === 'Sous 3 mois' ? 'var(--warn)' : 'var(--ok)', whiteSpace: 'nowrap' }}>{x.dispo}</span>
                   </Link>

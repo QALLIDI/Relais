@@ -29,6 +29,8 @@ import ma.recrutement.agenda.visio.VisioProvider;
 import ma.recrutement.agenda.web.Dtos.*;
 import ma.recrutement.common.events.EvenementsRecus;
 import ma.recrutement.common.events.EventPublisher;
+import ma.recrutement.common.events.CandidatAnonymiseEvent;
+import ma.recrutement.common.events.MissionAnnuleeEvent;
 import ma.recrutement.common.events.Events;
 import ma.recrutement.common.events.RetourClientEvent;
 import ma.recrutement.common.events.ReunionAvisEvent;
@@ -364,6 +366,54 @@ public class ReunionService {
             disponibilites.save(d);
         });
         return disponibilites.findByEntrepriseIdOrderByJourAscHeureDebutAsc(entrepriseId).stream().map(PlageDto::of).toList();
+    }
+
+    // ---------------- Missions annulées (événements d'entreprise-service) ----------------
+
+    @KafkaListener(topics = Topics.ENTREPRISE)
+    public void recevoirEntreprise(ConsumerRecord<String, String> message) {
+        if (Events.MISSION_ANNULEE.equals(recus.type(message))) {
+            recus.traiter(message, MissionAnnuleeEvent.class, this::surMissionAnnulee);
+        }
+    }
+
+    /**
+     * Mission annulée : les réunions encore ouvertes sont annulées sans nouvel e-mail, car le client
+     * et les candidats sont déjà prévenus de l'annulation de la mission.
+     */
+    void surMissionAnnulee(MissionAnnuleeEvent e) {
+        for (Reunion r : reunions.findByMissionId(e.missionId())) {
+            if (r.getStatut().ouverte()) {
+                r.setMotif("Mission annulée");
+                r.passerA(Statut.ANNULEE);
+            }
+        }
+    }
+
+    // ---------------- Profils supprimés (événements de candidat-service) ----------------
+
+    @KafkaListener(topics = Topics.CANDIDAT)
+    public void recevoirCandidat(ConsumerRecord<String, String> message) {
+        if (Events.CANDIDAT_ANONYMISE.equals(recus.type(message))) {
+            recus.traiter(message, CandidatAnonymiseEvent.class, this::surCandidatAnonymise);
+        }
+    }
+
+    /**
+     * Le candidat a supprimé son profil : son identité est retirée des réunions et celles encore
+     * ouvertes sont annulées ; les autres participants sont prévenus, pas le candidat.
+     */
+    void surCandidatAnonymise(CandidatAnonymiseEvent e) {
+        for (Reunion r : reunions.findByCandidatId(e.candidatId())) {
+            r.setCandidatNom("Candidat anonymisé");
+            r.setCandidatEmail(null);
+            r.getParticipants().removeIf(p -> p.getRole() == Role.CANDIDAT);
+            if (r.getStatut().ouverte()) {
+                r.setMotif("Le candidat a retiré son profil");
+                r.passerA(Statut.ANNULEE);
+                events.publier(Topics.AGENDA, Events.REUNION_ANNULEE, r.getId(), evenement(r, List.of(), r.getDebut()));
+            }
+        }
     }
 
     // ---------------- Événements de selection-service ----------------

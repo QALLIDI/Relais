@@ -16,6 +16,10 @@ public interface ReunionRepository extends JpaRepository<Reunion, UUID> {
 
     List<Reunion> findByCandidatEmailIgnoreCase(String email);
 
+    List<Reunion> findByCandidatId(UUID candidatId);
+
+    List<Reunion> findByMissionId(UUID missionId);
+
     List<Reunion> findByStatutAndDebutBetween(Statut statut, OffsetDateTime apres, OffsetDateTime avant);
 
     List<Reunion> findByStatutAndFinBefore(Statut statut, OffsetDateTime avant);

@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router';
 import { api } from '../../api/client';
-import { dateCourte, initiales } from '../../api/format';
+import { initiales } from '../../api/format';
 import { plage, useReunions } from '../../api/reunions';
-import type { Candidat, MaCandidature } from '../../api/types';
+import type { Candidat, Creneau, MaCandidature, Reunion } from '../../api/types';
+import { FeuilleConfirmation, FeuilleCreneau, libelleCreneau } from './FeuillesReunion';
 import { Chargement, Progression, Vide } from '../../components/ui';
 
 function completude(c: Candidat): { pct: number; manque?: string } {
@@ -29,18 +31,19 @@ export default function CandidatAccueil() {
   });
   const candidatures = useQuery({ queryKey: ['candidatures', 'mes'], queryFn: async () => (await api.get<MaCandidature[]>('/api/candidatures/mes')).data });
   const reunions = useReunions();
+  const [feuille, setFeuille] = useState<{ type: 'confirmer'; r: Reunion; creneau: Creneau } | { type: 'creneau'; r: Reunion } | null>(null);
 
   const pasDeProfil = axios.isAxiosError(profil.error) && profil.error.response?.status === 404;
-  if (profil.isLoading) return <main className="page narrow"><Chargement /></main>;
+  if (profil.isLoading) return <div className="page narrow"><Chargement /></div>;
   if (pasDeProfil) {
     return (
-      <main className="page narrow">
+      <div className="page narrow">
         <div className="card stack">
           <h1 style={{ fontSize: 34 }}>Bienvenue</h1>
           <p className="muted">Créez votre profil pour que le cabinet puisse vous proposer des postes qui vous correspondent.</p>
           <Link className="btn accent" to="/candidat/profil" style={{ alignSelf: 'flex-start' }}>Créer mon profil</Link>
         </div>
-      </main>
+      </div>
     );
   }
   const c = profil.data;
@@ -50,13 +53,13 @@ export default function CandidatAccueil() {
   const arc = 2 * Math.PI * 16;
 
   return (
-    <main className="page narrow">
+    <div className="page narrow">
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div>
           <div className="muted">Bonjour</div>
-          <h1 style={{ fontSize: 34 }}>{c?.nomComplet}</h1>
+          <h1 style={{ fontSize: 26 }}>{c?.nomComplet}</h1>
         </div>
-        <span style={{ width: 52, height: 52, borderRadius: '50%', background: 'radial-gradient(circle at 30% 30%, #FFB38A, #C9501E)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }} aria-hidden="true">
+        <span className="avatar lavande-av" style={{ width: 48, height: 48, flexBasis: 48 }} aria-hidden="true">
           {initiales(c?.nomComplet ?? '')}
         </span>
       </header>
@@ -76,17 +79,23 @@ export default function CandidatAccueil() {
         </section>
       )}
 
-      {aConfirmer.map((r) => (
-        <Link key={r.id} to={`/candidat/reunions/${r.id}`} className="card accent stack" style={{ gap: 10, borderRadius: 24, padding: 18, textDecoration: 'none' }}>
-          <div className="card-head" style={{ margin: 0 }}>
-            <span className="pill veil">Entretien : choisissez un créneau</span>
-            <span className="small">{r.creneaux.length} créneau(x)</span>
-          </div>
-          <div style={{ fontSize: 22, lineHeight: 1.15 }}>{r.entrepriseNom}<br />{r.missionIntitule}</div>
-          <div className="small">{r.natureLibelle} · {r.dureeMinutes} min · {r.typeLibelle.toLowerCase()}{r.creneaux[0] ? ` · dès le ${dateCourte(r.creneaux[0].debut)}` : ''}</div>
-          <span className="btn light" style={{ alignSelf: 'flex-start' }}>Choisir mon créneau</span>
-        </Link>
-      ))}
+      {aConfirmer.map((r) => {
+        const premier = r.creneaux[0];
+        return (
+          <section key={r.id} className="bloc reperes carte-entretien" aria-label={`Entretien à confirmer : ${r.missionIntitule}`}>
+            <div className="ligne-entre">
+              <span className="etat-carte">Entretien à confirmer</span>
+              {premier && <span className="small muted">{libelleCreneau(premier).split(' · ')[0]}</span>}
+            </div>
+            <Link to={`/candidat/reunions/${r.id}`} className="titre-entretien">{r.nature === 'ENTRETIEN_CLIENT' && r.entrepriseNom ? <>{r.entrepriseNom}<br /></> : null}{r.missionIntitule}</Link>
+            <span className="small muted">{premier ? `${libelleCreneau(premier).split(' · ')[1]} · ` : ''}{r.natureLibelle} · {r.type === 'PRESENTIEL' ? `sur site${r.lieu ? `, ${r.lieu}` : ''}` : r.typeLibelle.toLowerCase()}{r.creneaux.length > 1 ? ` · ${r.creneaux.length} créneaux proposés` : ''}</span>
+            <div className="deux-boutons" style={{ gridTemplateColumns: '1fr 1fr' }}>
+              <button type="button" className="btn" disabled={!premier} onClick={() => premier && setFeuille({ type: 'confirmer', r, creneau: premier })}>Confirmer</button>
+              <button type="button" className="btn primary" onClick={() => setFeuille({ type: 'creneau', r })}>Autre créneau</button>
+            </div>
+          </section>
+        );
+      })}
 
       {confirmees.length > 0 && (
         <section className="card stack" style={{ borderRadius: 24, gap: 10 }}>
@@ -114,6 +123,11 @@ export default function CandidatAccueil() {
           </div>
         ))}
       </section>
-    </main>
+      {feuille?.type === 'confirmer' && <FeuilleConfirmation r={feuille.r} creneau={feuille.creneau} onFermer={() => setFeuille(null)} onFait={() => setFeuille(null)} />}
+      {feuille?.type === 'creneau' && (
+        <FeuilleCreneau r={feuille.r} onFermer={() => setFeuille(null)} onFait={() => setFeuille(null)}
+          onChoisi={(creneau) => setFeuille({ type: 'confirmer', r: feuille.r, creneau })} />
+      )}
+    </div>
   );
 }

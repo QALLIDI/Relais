@@ -15,6 +15,8 @@ import lombok.Setter;
 public class DemandeRattachement {
 
     public static final String EN_ATTENTE = "EN_ATTENTE";
+    public static final String RATTACHEE = "RATTACHEE";
+    public static final String REFUSEE = "REFUSEE";
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -38,4 +40,9 @@ public class DemandeRattachement {
     private String statut = EN_ATTENTE;
 
     private OffsetDateTime createdAt = OffsetDateTime.now();
+
+    /** Entreprise à laquelle le compte a été rattaché (statut RATTACHEE). */
+    private UUID entrepriseId;
+
+    private OffsetDateTime traiteeLe;
 }

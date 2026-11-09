@@ -60,5 +60,12 @@ public class Mission {
 
     private boolean ouvertureNotifiee;
 
+    /** Recrutement confidentiel : le recruteur ne cite pas le client aux candidats avant l'entretien. */
+    private boolean confidentiel;
+
+    /** Motif saisi par le recruteur quand la mission est annulée. */
+    @Column(length = 500)
+    private String motifAnnulation;
+
     private OffsetDateTime createdAt = OffsetDateTime.now();
 }

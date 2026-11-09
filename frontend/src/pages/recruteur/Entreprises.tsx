@@ -3,6 +3,7 @@ import { type FormEvent, useState } from 'react';
 import { api, messageErreur } from '../../api/client';
 import type { Entreprise } from '../../api/types';
 import { Chargement, Erreur, Modal } from '../../components/ui';
+import { DemandesRattachement } from './DemandesRattachement';
 
 const MODELES: Record<string, string> = {
   POURCENTAGE: '% du salaire annuel',
@@ -25,6 +26,7 @@ export default function Entreprises() {
         </div>
         <button className="btn accent" onClick={() => setOuvert(true)}>Nouvelle entreprise</button>
       </section>
+      <DemandesRattachement />
       <section className="card">
         {entreprises.isLoading && <Chargement />}
         <div className="table-wrap">
@@ -45,7 +47,7 @@ export default function Entreprises() {
           </table>
         </div>
         <p className="muted small" style={{ marginTop: 12 }}>
-          Pour donner l'accès à l'espace entreprise : créez le compte dans Keycloak (rôle ENTREPRISE) et renseignez l'attribut <code>entrepriseId</code> avec l'identifiant de l'entreprise.
+          Les comptes inscrits en ligne apparaissent dans « Demandes d'accès » ; les collègues d'un client sont invités depuis son espace (page Équipe).
         </p>
       </section>
       {ouvert && <NouvelleEntreprise onClose={() => setOuvert(false)} onFait={() => { setOuvert(false); void qc.invalidateQueries({ queryKey: ['entreprises'] }); }} />}

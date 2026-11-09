@@ -56,6 +56,6 @@ public class MissionController {
     @PatchMapping("/{id}/statut")
     @PreAuthorize("hasRole('RECRUTEUR')")
     public MissionDto changerStatut(@PathVariable UUID id, @Valid @RequestBody StatutRequest req) {
-        return service.changerStatut(id, req.statut());
+        return service.changerStatut(id, req.statut(), req.motif());
     }
 }

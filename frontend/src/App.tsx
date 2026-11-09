@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Navigate, Route, Routes } from 'react-router';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router';
 import { hasAuthParams, useAuth } from 'react-oidc-context';
 import { setTokenProvider } from './api/client';
 import { lireSession } from './auth/auth';
@@ -19,15 +19,15 @@ import Statistiques from './pages/recruteur/Statistiques';
 import Notifications from './pages/Notifications';
 import EntrepriseAccueil from './pages/entreprise/Accueil';
 import NouveauBesoin from './pages/entreprise/NouveauBesoin';
+import Equipe from './pages/entreprise/Equipe';
 import Shortlist from './pages/entreprise/Shortlist';
 import FacturesClient from './pages/entreprise/Factures';
 import CandidatAccueil from './pages/candidat/Accueil';
 import MonProfil from './pages/candidat/MonProfil';
 import Agenda from './pages/recruteur/Agenda';
-import Planifier from './pages/Planifier';
-import Evaluation from './pages/Evaluation';
 import ReunionsClient from './pages/entreprise/Reunions';
 import ReunionCandidat from './pages/candidat/Reunion';
+import MesDonnees from './pages/candidat/MesDonnees';
 
 export default function App() {
   const auth = useAuth();
@@ -78,6 +78,7 @@ export default function App() {
           <Route path="missions" element={<Missions />} />
           <Route path="missions/nouvelle" element={<NouvelleMission />} />
           <Route path="missions/:id" element={<PipelinePage />} />
+          <Route path="pipeline" element={<PipelinePage />} />
           <Route path="vivier" element={<Vivier />} />
           <Route path="vivier/nouveau" element={<NouveauCandidat />} />
           <Route path="vivier/:id" element={<FicheCandidat />} />
@@ -86,8 +87,9 @@ export default function App() {
           <Route path="facturation" element={<Facturation />} />
           <Route path="statistiques" element={<Statistiques />} />
           <Route path="agenda" element={<Agenda />} />
-          <Route path="agenda/planifier" element={<Planifier espace="recruteur" />} />
-          <Route path="agenda/:id/evaluation" element={<Evaluation espace="recruteur" />} />
+          {/* Anciennes adresses (liens d'e-mails) : la fenêtre s'ouvre désormais par-dessus la page. */}
+          <Route path="agenda/planifier" element={<VersFenetre page="/recruteur/agenda" fenetre="planifier" />} />
+          <Route path="agenda/:id/evaluation" element={<VersFenetre page="/recruteur/agenda" fenetre="evaluation" />} />
           <Route path="notifications" element={<Notifications />} />
         </Route>
       )}
@@ -97,21 +99,33 @@ export default function App() {
           <Route path="besoin" element={<NouveauBesoin />} />
           <Route path="shortlist/:missionId" element={<Shortlist />} />
           <Route path="factures" element={<FacturesClient />} />
+          <Route path="equipe" element={<Equipe />} />
           <Route path="entretiens" element={<ReunionsClient />} />
-          <Route path="entretiens/planifier" element={<Planifier espace="entreprise" />} />
-          <Route path="entretiens/:id/evaluation" element={<Evaluation espace="entreprise" />} />
-          <Route path="notifications" element={<main className="page"><Notifications /></main>} />
+          <Route path="entretiens/planifier" element={<VersFenetre page="/entreprise/entretiens" fenetre="planifier" />} />
+          <Route path="entretiens/:id/evaluation" element={<VersFenetre page="/entreprise/entretiens" fenetre="evaluation" />} />
+          <Route path="notifications" element={<Notifications />} />
         </Route>
       )}
       {session.roles.includes('CANDIDAT') && (
         <Route path="/candidat" element={<CandidatLayout />}>
           <Route index element={<CandidatAccueil />} />
           <Route path="profil" element={<MonProfil />} />
+          <Route path="donnees" element={<MesDonnees />} />
           <Route path="reunions/:id" element={<ReunionCandidat />} />
-          <Route path="notifications" element={<main className="page narrow"><Notifications /></main>} />
+          <Route path="notifications" element={<div className="page narrow"><Notifications /></div>} />
         </Route>
       )}
       <Route path="*" element={<Navigate to={accueil} replace />} />
     </Routes>
   );
+}
+
+/** Redirige une ancienne page (planifier, évaluation) vers la page hôte avec la fenêtre ouverte. */
+function VersFenetre({ page, fenetre }: { page: string; fenetre: 'planifier' | 'evaluation' }) {
+  const { search } = useLocation();
+  const { id } = useParams();
+  const p = new URLSearchParams(search);
+  p.set('fenetre', fenetre);
+  if (id) p.set('reunion', id);
+  return <Navigate to={`${page}?${p.toString()}`} replace />;
 }

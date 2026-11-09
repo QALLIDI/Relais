@@ -4,11 +4,13 @@ import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import ma.recrutement.common.security.CurrentUser;
 import ma.recrutement.entreprise.domain.DemandeRattachement;
 import ma.recrutement.entreprise.repository.DemandeRattachementRepository;
 import ma.recrutement.entreprise.service.EntrepriseService;
+import ma.recrutement.entreprise.service.RattachementService;
 import ma.recrutement.entreprise.web.Dtos.DemandeRattachementDto;
 import ma.recrutement.entreprise.web.Dtos.EntrepriseDto;
 import ma.recrutement.entreprise.web.Dtos.EntrepriseRequest;
@@ -23,6 +25,7 @@ public class EntrepriseController {
 
     private final EntrepriseService service;
     private final DemandeRattachementRepository demandes;
+    private final RattachementService rattachements;
 
     @GetMapping
     @PreAuthorize("hasRole('RECRUTEUR')")
@@ -43,6 +46,23 @@ public class EntrepriseController {
     public List<DemandeRattachementDto> demandesRattachement() {
         return demandes.findByStatutOrderByCreatedAtAsc(DemandeRattachement.EN_ATTENTE).stream()
                 .map(DemandeRattachementDto::of).toList();
+    }
+
+    /** Rattache le compte à l'entreprise choisie : il devient un contact et la demande est close. */
+    @PostMapping("/demandes-rattachement/{id}/acceptation")
+    @PreAuthorize("hasRole('RECRUTEUR')")
+    public EntrepriseDto accepterRattachement(@PathVariable UUID id, @Valid @RequestBody AcceptationRequest req) {
+        return rattachements.accepter(id, req.entrepriseId());
+    }
+
+    @PostMapping("/demandes-rattachement/{id}/refus")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('RECRUTEUR')")
+    public void refuserRattachement(@PathVariable UUID id) {
+        rattachements.refuser(id);
+    }
+
+    public record AcceptationRequest(@NotNull UUID entrepriseId) {
     }
 
     @GetMapping("/{id}")

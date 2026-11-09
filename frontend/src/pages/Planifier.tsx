@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { api, messageErreur } from '../api/client';
 import { initiales } from '../api/format';
 import { fmtHeure, fmtJour, libelleType, useReunion, useReunions } from '../api/reunions';
 import type { Candidature, NatureReunion, PlageDisponibilite, Reunion, TypeReunion } from '../api/types';
+import { Annuler, Fenetre } from '../components/Fenetre';
 import { Chargement, Erreur, Vide } from '../components/ui';
 
 const HEURES = [9, 10, 11, 12, 14, 15, 16, 17];
@@ -54,18 +55,16 @@ function dansDispos(debut: Date, duree: number, dispos: PlageDisponibilite[]) {
 }
 
 /**
- * Planifier une réunion (maquette EmberPlanifier) : depuis une candidature (?candidature=) ou pour
- * une réunion à planifier ou reportée (?reunion=). Sert au recruteur et au client.
+ * Panneau « Planifier une réunion » : depuis une candidature (?candidature=) ou pour une réunion
+ * à planifier ou reportée (?reunion=). Sert au recruteur et au client ; s'ouvre par-dessus la page courante.
  */
-export default function Planifier({ espace }: { espace: 'recruteur' | 'entreprise' }) {
+export default function PanneauPlanifier({ espace, onFermer }: { espace: 'recruteur' | 'entreprise'; onFermer: () => void }) {
   const [params] = useSearchParams();
-  const navigate = useNavigate();
   const qc = useQueryClient();
   const reunionId = params.get('reunion') ?? '';
   const existante = useReunion(reunionId);
   const reunions = useReunions();
   const client = espace === 'entreprise';
-  const retour = client ? '/entreprise/entretiens' : '/recruteur/agenda';
 
   const enCours = useQuery({
     queryKey: ['candidatures', 'en-cours'],
@@ -108,123 +107,104 @@ export default function Planifier({ espace }: { espace: 'recruteur' | 'entrepris
       if (reunionId) return (await api.post(`/api/reunions/${reunionId}/proposition`, corps)).data;
       return (await api.post('/api/reunions', { ...corps, candidatureId, nature: natureEffective })).data;
     },
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['reunions'] }); navigate(retour); },
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['reunions'] }); onFermer(); },
   });
 
   const jours = prochainsJours();
   const basculer = (k: string) => setChoisis((s) => (s.includes(k) ? s.filter((x) => x !== k) : s.length < 3 ? [...s, k] : s));
-  const nomCandidat = existante.data?.candidatNom ?? candidature?.candidatNom;
-  const sousTitre = existante.data ? `${existante.data.missionIntitule ?? ''} · ${existante.data.entrepriseNom ?? ''}` : candidature ? `${candidature.missionIntitule} · ${candidature.entrepriseNom}` : '';
+  const nomCandidat = existante.data?.candidatNom ?? candidature?.candidatNom ?? params.get('nom') ?? undefined;
+  const sousTitre = existante.data ? `${existante.data.missionIntitule ?? ''} · ${existante.data.entrepriseNom ?? ''}` : candidature ? `${candidature.missionIntitule} · ${candidature.entrepriseNom}` : params.get('mission') ?? '';
   const pret = choisis.length > 0 && (!!reunionId || !!candidatureId) && (type !== 'PRESENTIEL' || !!lieu.trim());
 
   return (
-    <main className="page">
-      <section className="header">
-        <div>
-          <div className="crumbs"><Link to={retour}>{client ? 'Entretiens' : 'Agenda'}</Link><span>/</span><span>{reunionId ? 'Nouvelle proposition' : 'Nouvelle réunion'}</span></div>
-          <h1>Planifier une réunion</h1>
-        </div>
-        <div className="actions">
-          <Link to={retour} className="btn">Annuler</Link>
-          <button type="button" className="btn accent" disabled={!pret || envoyer.isPending} onClick={() => envoyer.mutate()}>Envoyer {choisis.length} proposition(s)</button>
-        </div>
-      </section>
+    <Fenetre type="drawer" largeur={600} onFermer={onFermer} modifie={choisis.length > 0}
+      titre={reunionId ? 'Proposer de nouveaux créneaux' : 'Planifier une réunion'}
+      sousTitre="Jusqu’à 3 créneaux. Invitation .ics, lien visio et rappels partent automatiquement."
+      pied={<>
+        <Annuler onClick={onFermer} />
+        <button type="button" className="btn primary" disabled={!pret || envoyer.isPending} onClick={() => envoyer.mutate()}>
+          {choisis.length > 1 ? `Envoyer les ${choisis.length} propositions` : 'Envoyer la proposition'}
+        </button>
+      </>}>
       {envoyer.error && <Erreur message={messageErreur(envoyer.error)} />}
 
-      <div className="row">
-        <div className="grow-main stack" style={{ gap: 16 }}>
-          <section className="card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 18 }}>
-            <div className="stack" style={{ gap: 10 }}>
-              <div className="small" style={{ color: 'var(--ink-2)' }}>Candidature</div>
-              {nomCandidat ? (
-                <div className="tile" style={{ background: 'var(--sunken)' }}>
-                  <span className="avatar t-violet" aria-hidden="true">{initiales(nomCandidat)}</span>
-                  <span style={{ flex: 1, minWidth: 0 }}><b style={{ fontWeight: 600 }}>{nomCandidat}</b><span className="muted small" style={{ display: 'block' }}>{sousTitre}</span></span>
-                  {existante.data?.statut === 'A_PLANIFIER' && <span className="pill ok">Client : à rencontrer</span>}
-                  {existante.data?.statut === 'REPORTEE' && <span className="pill warn">Reportée</span>}
-                </div>
-              ) : !client && !reunionId ? (
-                <label className="field">Choisir une candidature
-                  <select value={candidatureId} onChange={(e) => setCandidatureId(e.target.value)}>
-                    <option value="">—</option>
-                    {enCours.data?.map((c) => <option key={c.id} value={c.id}>{c.candidatNom} · {c.missionIntitule} ({c.etapeLibelle})</option>)}
-                  </select>
-                </label>
-              ) : client && candidatureId ? <ProfilClient /> : <Chargement />}
-              {!client && !reunionId && (
-                <>
-                  <div className="small" style={{ color: 'var(--ink-2)', marginTop: 4 }}>Type de réunion</div>
-                  <div className="pills-choix" role="group" aria-label="Type de réunion">
-                    {NATURES.map(([v, l]) => <button key={v} type="button" aria-pressed={nature === v} onClick={() => setNature(v)}>{l}</button>)}
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="stack" style={{ gap: 10 }}>
-              <div className="small" style={{ color: 'var(--ink-2)' }}>Mode</div>
-              <div className="seg" role="group" aria-label="Mode">
-                {(['VISIO', 'PRESENTIEL', 'TELEPHONE'] as TypeReunion[]).map((t) => <button key={t} type="button" aria-pressed={type === t} onClick={() => setType(t)}>{libelleType[t]}</button>)}
-              </div>
-              <div className="box small muted" style={{ background: 'var(--surface-2)' }}>{INFO_MODE[type]}</div>
-              {type === 'PRESENTIEL' && <label className="field">Adresse<input value={lieu} onChange={(e) => setLieu(e.target.value)} placeholder="Atlas Digital, Casa Anfa" /></label>}
-              <div className="small" style={{ color: 'var(--ink-2)', marginTop: 4 }}>Durée</div>
-              <div className="pills-choix" role="group" aria-label="Durée">
-                {DUREES.map((d) => <button key={d} type="button" aria-pressed={duree === d} onClick={() => setDuree(d)}>{libelleDuree(d)}</button>)}
-              </div>
-            </div>
-          </section>
-
-          <section className="card stack" style={{ gap: 14 }}>
-            <div className="card-head" style={{ margin: 0, flexWrap: 'wrap' }}>
-              <div>
-                <h2>Proposer jusqu'à 3 créneaux</h2>
-                <div className="muted small">{plages.length ? 'Disponibilités du client croisées avec l’agenda du recruteur' : 'Créneaux libres dans l’agenda du recruteur'}</div>
-              </div>
-              <div className="chips small muted">
-                <span className="legende"><span className="dot" style={{ background: 'var(--ok-bg)', border: '1px solid var(--ok)' }} />Libre</span>
-                <span className="legende"><span className="dot" style={{ background: 'var(--stripes)' }} />Occupé</span>
-                <span className="legende"><span className="dot" style={{ background: 'var(--accent)' }} />Proposé</span>
-              </div>
-            </div>
-            <div style={{ overflowX: 'auto' }}>
-              <div className="grille-creneaux">
-                <span />
-                {jours.map((j) => <span key={j.toISOString()} className="muted small" style={{ textAlign: 'center', textTransform: 'capitalize' }}>{fmtJour(j.toISOString())}</span>)}
-                {HEURES.map((h) => (
-                  <Ligne key={h} h={h} jours={jours} duree={duree} plages={plages} reunions={reunions.data ?? []} sauf={reunionId} choisis={choisis} basculer={basculer} />
-                ))}
-              </div>
-            </div>
-            {plages.length === 0 && natureEffective === 'ENTRETIEN_CLIENT' && dispos.isSuccess && <Vide>Le client n'a pas indiqué de disponibilités : tous les créneaux libres sont proposables.</Vide>}
-          </section>
+      {nomCandidat ? (
+        <div className="tile" style={{ background: 'var(--sunken)', border: 0 }}>
+          <span className="avatar t-violet" aria-hidden="true">{initiales(nomCandidat)}</span>
+          <span style={{ flex: 1, minWidth: 0 }}><b style={{ fontWeight: 600 }}>{nomCandidat}</b><span className="muted small" style={{ display: 'block' }}>{sousTitre}</span></span>
+          {existante.data?.statut === 'A_PLANIFIER' && <span className="pill ok-soft">Client : à rencontrer</span>}
+          {existante.data?.statut === 'REPORTEE' && <span className="pill warn">Reportée</span>}
         </div>
+      ) : !client && !reunionId ? (
+        <label className="field">Candidature
+          <select value={candidatureId} onChange={(e) => setCandidatureId(e.target.value)}>
+            <option value="">Choisir une candidature…</option>
+            {enCours.data?.map((c) => <option key={c.id} value={c.id}>{c.candidatNom} · {c.missionIntitule} ({c.etapeLibelle})</option>)}
+          </select>
+        </label>
+      ) : <Chargement />}
 
-        <aside className="grow-side stack" style={{ gap: 16 }}>
-          <section className="card accent stack" style={{ gap: 12 }}>
-            <div className="small" style={{ opacity: 0.9 }}>Créneaux proposés</div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}><span className="big">{choisis.length}</span><span className="small" style={{ paddingBottom: 8, opacity: 0.9 }}>sur 3<br />maximum</span></div>
-            {[...choisis].sort().map((k) => (
-              <div key={k} className="box" style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', fontSize: 14 }}>
-                <span style={{ textTransform: 'capitalize' }}>{fmtJour(k)} · {fmtHeure(k)}</span><span className="muted small">{libelleDuree(duree)} · {libelleType[type]}</span>
-              </div>
-            ))}
-            <div className="small" style={{ opacity: 0.85 }}>Le candidat choisit un créneau ; les participants reçoivent l'invitation dès sa réponse. Les autres créneaux sont libérés.</div>
-          </section>
-          <section className="card stack" style={{ gap: 10 }}>
-            <h2 style={{ fontSize: 17 }}>Participants</h2>
-            {existante.data ? existante.data.participants.map((p) => (
-              <div key={`${p.role}-${p.email ?? p.nom}`} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className={`avatar ${p.role === 'CANDIDAT' ? 't-violet' : 't-peach'}`} style={{ width: 32, height: 32, flexBasis: 32, fontSize: 11 }} aria-hidden="true">{initiales(p.nom ?? '?')}</span>
-                <span style={{ fontSize: 14 }}>{p.nom}<span className="muted" style={{ display: 'block', fontSize: 11 }}>{p.role === 'CANDIDAT' ? 'Candidat · choisit le créneau' : p.role === 'CLIENT' ? 'Client' : 'Recruteur'}</span></span>
-              </div>
-            )) : (
-              <div className="muted small">Le candidat (qui choisit le créneau), {natureEffective === 'ENTRETIEN_CLIENT' ? 'le contact client de la mission ' : ''}et le recruteur sont invités.</div>
-            )}
-            <label className="check" style={{ borderTop: '1px solid var(--line)', paddingTop: 10 }}><input type="checkbox" checked readOnly /> Rappels e-mail 24 h et SMS 2 h avant</label>
-          </section>
-        </aside>
+      {!client && !reunionId && (
+        <div className="field">Type de réunion
+          <div className="choix" role="group" aria-label="Type de réunion">
+            {NATURES.map(([v, l]) => <button key={v} type="button" aria-pressed={nature === v} onClick={() => setNature(v)}>{l}</button>)}
+          </div>
+        </div>
+      )}
+      <div className="form-grid" style={{ gap: 12 }}>
+        <div className="field">Format
+          <div className="choix" role="group" aria-label="Format">
+            {(['VISIO', 'PRESENTIEL', 'TELEPHONE'] as TypeReunion[]).map((t) => <button key={t} type="button" aria-pressed={type === t} onClick={() => setType(t)}>{libelleType[t]}</button>)}
+          </div>
+        </div>
+        <div className="field">Durée
+          <div className="choix" role="group" aria-label="Durée">
+            {DUREES.map((d) => <button key={d} type="button" aria-pressed={duree === d} onClick={() => setDuree(d)}>{libelleDuree(d)}</button>)}
+          </div>
+        </div>
       </div>
-    </main>
+      <div className="encadre">{INFO_MODE[type]}</div>
+      {type === 'PRESENTIEL' && <label className="field">Adresse<input value={lieu} onChange={(e) => setLieu(e.target.value)} placeholder="Atlas Digital, Casa Anfa" /></label>}
+
+      <div className="stack" style={{ gap: 8 }}>
+        <div className="muted small">{plages.length ? 'Disponibilités du client croisées avec l’agenda du recruteur' : 'Créneaux libres dans l’agenda du recruteur'} · cliquez pour proposer</div>
+        <div style={{ overflowX: 'auto' }}>
+          <div className="grille-creneaux">
+            <span />
+            {jours.map((j) => <span key={j.toISOString()} className="muted small" style={{ textAlign: 'center', textTransform: 'capitalize' }}>{fmtJour(j.toISOString())}</span>)}
+            {HEURES.map((h) => (
+              <Ligne key={h} h={h} jours={jours} duree={duree} plages={plages} reunions={reunions.data ?? []} sauf={reunionId} choisis={choisis} basculer={basculer} />
+            ))}
+          </div>
+        </div>
+        {plages.length === 0 && natureEffective === 'ENTRETIEN_CLIENT' && dispos.isSuccess && <Vide>Le client n'a pas indiqué de disponibilités : tous les créneaux libres sont proposables.</Vide>}
+      </div>
+
+      {choisis.length > 0 && (
+        <div className="stack" style={{ gap: 6 }}>
+          <div className="muted small">Créneaux proposés ({choisis.length} sur 3)</div>
+          {[...choisis].sort().map((k) => (
+            <div key={k} className="tile" style={{ padding: '8px 12px', justifyContent: 'space-between' }}>
+              <span style={{ textTransform: 'capitalize', fontSize: 14 }}>{fmtJour(k)} · {fmtHeure(k)}</span><span className="muted small">{libelleDuree(duree)} · {libelleType[type]}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="stack" style={{ gap: 8 }}>
+        <div className="muted small">Participants</div>
+        {existante.data ? (
+          <div className="chips">
+            {existante.data.participants.map((p) => (
+              <span key={`${p.role}-${p.email ?? p.nom}`} className="chip">{p.nom}<span className="muted small">{p.role === 'CANDIDAT' ? 'candidat' : p.role === 'CLIENT' ? 'client' : 'recruteur'}</span></span>
+            ))}
+          </div>
+        ) : (
+          <div className="muted small">Le candidat (qui choisit le créneau), {natureEffective === 'ENTRETIEN_CLIENT' ? 'le contact client de la mission ' : ''}et le recruteur sont invités.</div>
+        )}
+        <label className="check"><input type="checkbox" checked readOnly /> Rappels : e-mail la veille et SMS 2 h avant</label>
+      </div>
+    </Fenetre>
   );
 }
 
@@ -248,16 +228,5 @@ function Ligne({ h, jours, duree, plages, reunions, sauf, choisis, basculer }: {
         );
       })}
     </>
-  );
-}
-
-/** Côté client : nom du candidat et intitulé de la mission, passés par la shortlist. */
-function ProfilClient() {
-  const [params] = useSearchParams();
-  return (
-    <div className="tile" style={{ background: 'var(--sunken)' }}>
-      <span className="avatar t-violet" aria-hidden="true">{initiales(params.get('nom') ?? '?')}</span>
-      <span style={{ flex: 1, minWidth: 0 }}><b style={{ fontWeight: 600 }}>{params.get('nom') ?? 'Candidat de votre shortlist'}</b><span className="muted small" style={{ display: 'block' }}>{params.get('mission') ?? ''}</span></span>
-    </div>
   );
 }

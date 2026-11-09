@@ -12,6 +12,7 @@ import ma.recrutement.candidat.service.CandidatService;
 import ma.recrutement.candidat.web.Dtos.CandidatDto;
 import ma.recrutement.candidat.web.Dtos.CandidatRequest;
 import ma.recrutement.candidat.web.Dtos.CandidatResume;
+import ma.recrutement.candidat.web.Dtos.ConsentementsRequest;
 import ma.recrutement.candidat.web.Dtos.Groupe;
 import ma.recrutement.candidat.web.Dtos.NoteDto;
 import ma.recrutement.candidat.web.Dtos.NoteRequest;
@@ -121,6 +122,12 @@ public class CandidatController {
     @PreAuthorize("hasRole('CANDIDAT')")
     public CandidatDto enregistrerMonProfil(@Valid @RequestBody CandidatRequest req) {
         return service.enregistrerMonProfil(req);
+    }
+
+    @PutMapping("/me/consentements")
+    @PreAuthorize("hasRole('CANDIDAT')")
+    public CandidatDto mesConsentements(@RequestBody ConsentementsRequest req) {
+        return service.mesConsentements(req);
     }
 
     @DeleteMapping("/me")

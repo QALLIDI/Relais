@@ -10,6 +10,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import ma.recrutement.entreprise.domain.Contact;
 import ma.recrutement.entreprise.domain.DemandeRattachement;
 import ma.recrutement.entreprise.domain.Entreprise;
@@ -30,10 +31,10 @@ public final class Dtos {
     }
 
     public record DemandeRattachementDto(UUID id, String nom, String email, String telephone, String raisonSociale,
-                                         OffsetDateTime createdAt) {
+                                         OffsetDateTime createdAt, String keycloakUserId) {
         public static DemandeRattachementDto of(DemandeRattachement d) {
             return new DemandeRattachementDto(d.getId(), d.getNom(), d.getEmail(), d.getTelephone(),
-                    d.getRaisonSociale(), d.getCreatedAt());
+                    d.getRaisonSociale(), d.getCreatedAt(), d.getKeycloakUserId());
         }
     }
 
@@ -56,10 +57,10 @@ public final class Dtos {
                                  String typeContrat, String ville, String teletravail, Integer nbPostes,
                                  Integer experienceMin, BigDecimal salaireMin, BigDecimal salaireMax,
                                  LocalDate dateLimite, String priorite, List<String> competencesRequises,
-                                 List<String> competencesSouhaitees, StatutMission statut) {
+                                 List<String> competencesSouhaitees, StatutMission statut, Boolean confidentiel) {
     }
 
-    public record StatutRequest(@NotNull StatutMission statut) {
+    public record StatutRequest(@NotNull StatutMission statut, @Size(max = 500) String motif) {
     }
 
     /** Vue complète d'une mission ; tauxHonoraires sert à la facturation au placement. */
@@ -69,7 +70,8 @@ public final class Dtos {
                              Integer nbPostes, Integer experienceMin, BigDecimal salaireMin,
                              BigDecimal salaireMax, LocalDate dateLimite, String priorite,
                              StatutMission statut, List<String> competencesRequises,
-                             List<String> competencesSouhaitees, OffsetDateTime createdAt) {
+                             List<String> competencesSouhaitees, OffsetDateTime createdAt, boolean confidentiel,
+                             String motifAnnulation) {
         public static MissionDto of(Mission m) {
             Entreprise e = m.getEntreprise();
             return new MissionDto(m.getId(), e.getId(), e.getRaisonSociale(), e.getSecteur(),
@@ -77,7 +79,7 @@ public final class Dtos {
                     m.getTypeContrat(), m.getVille(), m.getTeletravail(), m.getNbPostes(), m.getExperienceMin(),
                     m.getSalaireMin(), m.getSalaireMax(), m.getDateLimite(), m.getPriorite(), m.getStatut(),
                     List.copyOf(m.getCompetencesRequises()), List.copyOf(m.getCompetencesSouhaitees()),
-                    m.getCreatedAt());
+                    m.getCreatedAt(), m.isConfidentiel(), m.getMotifAnnulation());
         }
     }
 

@@ -7,7 +7,7 @@ import { Chargement, Pill, toneFacture, Vide } from '../../components/ui';
 export default function FacturesClient() {
   const factures = useQuery({ queryKey: ['factures'], queryFn: async () => (await api.get<Facture[]>('/api/factures')).data });
   return (
-    <main className="page">
+    <div className="page">
       <h1>Factures</h1>
       <section className="card">
         {factures.isLoading && <Chargement />}
@@ -31,6 +31,6 @@ export default function FacturesClient() {
           </table>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
