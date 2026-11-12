@@ -23,6 +23,8 @@ public final class Events {
     public static final String SHORTLIST_ENVOYEE = "shortlist.envoyee";
     public static final String RETOUR_CLIENT = "retour.client";
     public static final String CANDIDATURES_CLOSES = "candidatures.closes";
+    public static final String TEST_ENVOYE = "test.envoye";
+    public static final String REFERENCE_DEMANDEE = "reference.demandee";
     public static final String ENTRETIEN_PLANIFIE = "entretien.planifie";
     public static final String CANDIDAT_PLACE = "candidat.place";
     public static final String FACTURE_EMISE = "facture.emise";

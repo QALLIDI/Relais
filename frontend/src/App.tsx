@@ -25,6 +25,7 @@ import FacturesClient from './pages/entreprise/Factures';
 import CandidatAccueil from './pages/candidat/Accueil';
 import MonProfil from './pages/candidat/MonProfil';
 import Agenda from './pages/recruteur/Agenda';
+import Qualification from './pages/recruteur/Qualification';
 import ReunionsClient from './pages/entreprise/Reunions';
 import ReunionCandidat from './pages/candidat/Reunion';
 import MesDonnees from './pages/candidat/MesDonnees';
@@ -79,6 +80,7 @@ export default function App() {
           <Route path="missions/nouvelle" element={<NouvelleMission />} />
           <Route path="missions/:id" element={<PipelinePage />} />
           <Route path="pipeline" element={<PipelinePage />} />
+          <Route path="candidatures/:id/qualification" element={<Qualification />} />
           <Route path="vivier" element={<Vivier />} />
           <Route path="vivier/nouveau" element={<NouveauCandidat />} />
           <Route path="vivier/:id" element={<FicheCandidat />} />

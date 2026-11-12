@@ -28,6 +28,7 @@ const GROUPES: { cle: string; titre: string; etapes: Etape[]; cible: Etape }[] =
 function etat(c: Candidature): string {
   if (c.etape === 'PRESENTE') return c.avisClient ? `Client : ${c.avisClient === 'A_RENCONTRER' ? 'à rencontrer' : c.avisClient === 'RETENU' ? 'retenu' : 'refusé'}` : 'Avis client attendu';
   if (c.etape === 'SOURCE') return 'À appeler';
+  if (c.scoreTest != null && (c.etape === 'QUALIFIE' || c.etape === 'ENTRETIEN_RECRUTEUR')) return `Test ${c.scoreTest}/100${c.referencesDemandees ? ` · réf. ${c.referencesRecues ?? 0}/${c.referencesDemandees}` : ''}`;
   if (c.noteGlobale && (c.etape === 'QUALIFIE' || c.etape === 'ENTRETIEN_RECRUTEUR')) return `Évaluation ${c.noteGlobale}/5`;
   return c.etapeLibelle;
 }
@@ -247,6 +248,7 @@ function CarteCandidat({ c, choisi, onChoisir, onEvaluer, onRefuser, onPlacer }:
         <details className="carte-menu">
           <summary aria-label={`Actions pour ${c.candidatNom}`}>⋯</summary>
           <div className="menu" onClick={(e) => (e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open')}>
+            <Link to={`/recruteur/candidatures/${c.id}/qualification`}>Tests et références</Link>
             <button type="button" onClick={onEvaluer}>Évaluer</button>
             <Link to={versFenetre('planifier', { candidature: c.id, nom: c.candidatNom, mission: c.missionIntitule })}>Planifier une réunion</Link>
             {onPlacer && <button type="button" onClick={onPlacer}>Confirmer le placement</button>}

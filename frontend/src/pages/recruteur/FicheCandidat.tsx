@@ -135,12 +135,13 @@ export default function FicheCandidat() {
               <div className="bloc-corps">
                 {candidatures.data?.length === 0 && <p className="muted" style={{ marginTop: 0 }}>Dans aucun pipeline.</p>}
                 {candidatures.data?.map((x) => (
-                  <Link key={x.id} to={`/recruteur/missions/${x.missionId}`} className="echeance">
+                  <div key={x.id} className="echeance">
                     <span className="mono-av grand" aria-hidden="true">{initiales(x.entrepriseNom)}</span>
-                    <span className="txt"><b>{x.missionIntitule}</b><span>{x.entrepriseNom}</span></span>
+                    <span className="txt"><Link to={`/recruteur/missions/${x.missionId}`} className="nom-lien">{x.missionIntitule}</Link><span>{x.entrepriseNom}</span></span>
                     <Score value={x.score} />
                     <span className="etat-carte">{x.etapeLibelle}</span>
-                  </Link>
+                    <Link to={`/recruteur/candidatures/${x.id}/qualification`} className="btn small">Tests et références</Link>
+                  </div>
                 ))}
                 <div className="actions" style={{ marginTop: 12 }}>
                   <select className="input" aria-label="Mission" value={missionChoisie} onChange={(e) => setMissionChoisie(e.target.value)} style={{ flex: '1 1 200px', minWidth: 0 }}>

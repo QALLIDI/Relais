@@ -150,10 +150,13 @@ function Comparateur({ profils, onAvis }: { profils: ProfilPresente[]; onAvis: (
   const noteMax = meilleur((p) => p.noteGlobale);
   const expMax = meilleur((p) => p.candidatExperience);
   const salMin = meilleur((p) => p.candidatPretention, true);
+  const testMax = meilleur((p) => p.scoreTest);
   const point = (ok: boolean) => (ok ? <span className="point-ton" style={{ background: 'var(--accent)' }} aria-label="meilleur sur ce critère" /> : null);
   const lignes: { libelle: string; cellule: (p: ProfilPresente) => ReactNode }[] = [
     { libelle: 'Note du recruteur', cellule: (p) => <>{point(p.noteGlobale != null && p.noteGlobale === noteMax)}{p.noteGlobale != null ? `${String(p.noteGlobale).replace('.', ',')} / 5` : '—'}</> },
     { libelle: "L'avis du recruteur", cellule: (p) => p.synthese ?? '—' },
+    { libelle: 'Test technique', cellule: (p) => <>{point(p.scoreTest != null && p.scoreTest === testMax)}{p.scoreTest != null ? `${p.scoreTest} / 100` : '—'}</> },
+    { libelle: 'Références', cellule: (p) => (p.referencesRecues ? `${p.referencesRecues} reçue(s)` : '—') },
     { libelle: 'Compétences', cellule: (p) => p.competences.join(', ') || '—' },
     { libelle: 'Expérience', cellule: (p) => <>{point(p.candidatExperience === expMax)}{p.candidatExperience} ans</> },
     { libelle: 'Prétentions', cellule: (p) => <>{point(p.candidatPretention != null && p.candidatPretention === salMin)}{p.candidatPretention != null ? mad(p.candidatPretention) : '—'}</> },

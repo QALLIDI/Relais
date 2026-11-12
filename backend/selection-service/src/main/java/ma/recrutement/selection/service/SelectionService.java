@@ -90,6 +90,11 @@ public class SelectionService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public CandidatureDto detail(UUID id) {
+        return CandidatureDto.of(charger(id));
+    }
+
     public CandidatureDto ajouter(UUID missionId, UUID candidatId) {
         if (candidatures.existsByMissionIdAndCandidatId(missionId, candidatId)) {
             throw new BusinessException("Ce candidat est déjà dans le pipeline de cette mission");

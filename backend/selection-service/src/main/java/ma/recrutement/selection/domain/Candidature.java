@@ -73,6 +73,11 @@ public class Candidature {
     private LocalDate dateEmbauche;
     private BigDecimal salaireAnnuel;
 
+    /** Dernier score de test technique corrigé (sur 100). */
+    private Integer scoreTest;
+    private int referencesDemandees;
+    private int referencesRecues;
+
     private OffsetDateTime createdAt = OffsetDateTime.now();
     private OffsetDateTime updatedAt = OffsetDateTime.now();
 

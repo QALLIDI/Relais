@@ -36,6 +36,12 @@ public class PipelineController {
         return service.ajouter(req.missionId(), req.candidatId());
     }
 
+    @GetMapping("/api/candidatures/{id}")
+    @PreAuthorize("hasRole('RECRUTEUR')")
+    public CandidatureDto detail(@PathVariable UUID id) {
+        return service.detail(id);
+    }
+
     @GetMapping("/api/candidatures")
     @PreAuthorize("hasRole('RECRUTEUR')")
     public List<CandidatureDto> lister(@RequestParam(required = false) UUID candidatId) {

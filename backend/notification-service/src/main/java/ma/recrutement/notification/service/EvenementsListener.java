@@ -16,6 +16,8 @@ import ma.recrutement.common.events.FactureEmiseEvent;
 import ma.recrutement.common.events.MissionAnnuleeEvent;
 import ma.recrutement.common.events.MissionOuverteEvent;
 import ma.recrutement.common.events.RattachementEvent;
+import ma.recrutement.common.events.ReferenceDemandeeEvent;
+import ma.recrutement.common.events.TestEnvoyeEvent;
 import ma.recrutement.common.events.RetourClientEvent;
 import ma.recrutement.common.events.ShortlistEnvoyeeEvent;
 import ma.recrutement.common.events.Topics;
@@ -54,6 +56,8 @@ public class EvenementsListener {
             case Events.SHORTLIST_ENVOYEE -> recus.traiter(message, ShortlistEnvoyeeEvent.class, this::shortlist);
             case Events.RETOUR_CLIENT -> recus.traiter(message, RetourClientEvent.class, this::retourClient);
             case Events.CANDIDATURES_CLOSES -> recus.traiter(message, CandidaturesClosesEvent.class, this::candidaturesCloses);
+            case Events.TEST_ENVOYE -> recus.traiter(message, TestEnvoyeEvent.class, this::testEnvoye);
+            case Events.REFERENCE_DEMANDEE -> recus.traiter(message, ReferenceDemandeeEvent.class, this::referenceDemandee);
             case Events.ENTRETIEN_PLANIFIE -> recus.traiter(message, EntretienPlanifieEvent.class, this::entretien);
             case Events.CANDIDAT_PLACE -> recus.traiter(message, CandidatPlaceEvent.class, this::placement);
             case Events.FACTURE_EMISE -> recus.traiter(message, FactureEmiseEvent.class, this::facture);
@@ -128,6 +132,50 @@ public class EvenementsListener {
                             null,
                             null));
         }
+    }
+
+    /** Test technique : le candidat reçoit le lien, la durée et la date limite. */
+    void testEnvoye(TestEnvoyeEvent e) {
+        String limite = e.dateLimite() == null ? null : DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRENCH).format(e.dateLimite());
+        String texte = "Bonjour %s, voici le test « %s » pour le poste de %s.%s%s%s".formatted(prenom(e.candidatNom()), e.intitule(),
+                e.missionIntitule(), e.message() == null ? "" : "\n\n" + e.message(), limite == null ? "" : "\n\nÀ rendre avant le " + limite + ".",
+                e.lien() == null ? "" : " " + e.lien());
+        List<Mise.Info> infos = new java.util.ArrayList<>();
+        infos.add(new Mise.Info("Test", e.intitule()));
+        if (e.dureeMinutes() != null) {
+            infos.add(new Mise.Info("Durée", e.dureeMinutes() + " min"));
+        }
+        if (limite != null) {
+            infos.add(new Mise.Info("À rendre avant le", limite));
+        }
+        notifier.notifier(e.candidatEmail(), Events.TEST_ENVOYE, "Votre test pour le poste de " + e.missionIntitule(), texte,
+                new Mise("Test technique",
+                        e.message() == null ? List.of("Bonjour %s, votre recruteur vous propose un test pour le poste de %s.".formatted(prenom(e.candidatNom()), e.missionIntitule()))
+                                : List.of("Bonjour %s,".formatted(prenom(e.candidatNom())), e.message()),
+                        infos,
+                        e.lien() == null ? null : new Mise.Action("Commencer le test", e.lien()),
+                        e.lien() == null ? "Votre recruteur vous transmet les modalités du test." : "Prévoyez un moment au calme : le test se fait d'une traite."));
+    }
+
+    /** Demande de référence : le référent sait qui va l'appeler et pourquoi. */
+    void referenceDemandee(ReferenceDemandeeEvent e) {
+        String texte = ("Bonjour %s, %s a donné votre nom comme référence pour un poste de %s. Votre recruteur Recrut vous contactera "
+                + "dans les prochains jours pour un échange de 5 minutes. Vous pouvez aussi répondre directement à cet e-mail.")
+                .formatted(prenom(e.referentNom()), e.candidatNom(), e.missionIntitule());
+        notifier.notifier(e.referentEmail(), Events.REFERENCE_DEMANDEE,
+                (e.relance() ? "Rappel : " : "") + "référence pour " + e.candidatNom(), texte,
+                new Mise(e.relance() ? "Rappel" : "Demande de référence",
+                        List.of("Bonjour %s,".formatted(prenom(e.referentNom())),
+                                "%s a donné votre nom comme référence pour un poste de %s.".formatted(e.candidatNom(), e.missionIntitule()),
+                                "Votre recruteur vous contactera dans les prochains jours pour un échange d'environ 5 minutes : "
+                                        + "points forts, axes de progrès, contexte de travail. Vous pouvez aussi répondre directement à cet e-mail."),
+                        List.of(),
+                        null,
+                        "Vos réponses restent confidentielles et ne sont partagées qu'avec l'entreprise qui recrute."));
+    }
+
+    private static String prenom(String nom) {
+        return nom == null || nom.isBlank() ? "" : nom.strip().split("\\s+")[0];
     }
 
     void shortlist(ShortlistEnvoyeeEvent e) {

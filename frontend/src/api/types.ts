@@ -204,6 +204,9 @@ export interface Candidature {
   presenteLe?: string;
   updatedAt: string;
   evaluationEntretien?: EvaluationEntretien;
+  scoreTest?: number;
+  referencesDemandees?: number;
+  referencesRecues?: number;
 }
 
 /** Grille du client après l'entretien, recopiée sur la candidature par selection-service. */
@@ -250,6 +253,8 @@ export interface ProfilPresente {
   avisClient?: AvisClient;
   commentaireClient?: string;
   presenteLe?: string;
+  scoreTest?: number;
+  referencesRecues?: number;
 }
 
 export interface MaCandidature {

@@ -43,7 +43,8 @@ public final class Dtos {
                                  BigDecimal candidatPretention, Etape etape, String etapeLibelle, int score,
                                  String motifSortie, Integer noteGlobale, String synthese, AvisClient avisClient,
                                  String commentaireClient, OffsetDateTime presenteLe, OffsetDateTime updatedAt,
-                                 EvaluationEntretienDto evaluationEntretien) {
+                                 EvaluationEntretienDto evaluationEntretien, Integer scoreTest, int referencesDemandees,
+                                 int referencesRecues) {
         public static CandidatureDto of(Candidature c) {
             return new CandidatureDto(c.getId(), c.getMissionId(), c.getMissionIntitule(), c.getEntrepriseId(),
                     c.getEntrepriseNom(), c.getCandidatId(), c.getCandidatNom(), c.getCandidatEmail(),
@@ -51,7 +52,8 @@ public final class Dtos {
                     Dtos.competences(c.getCandidatCompetences()), c.getCandidatDisponibilite(), c.getCandidatPretention(),
                     c.getEtape(), c.getEtape().libelle(), c.getScore(), c.getMotifSortie(), c.getNoteGlobale(),
                     c.getSynthese(), c.getAvisClient(), c.getCommentaireClient(), c.getPresenteLe(),
-                    c.getUpdatedAt(), EvaluationEntretienDto.of(c));
+                    c.getUpdatedAt(), EvaluationEntretienDto.of(c), c.getScoreTest(), c.getReferencesDemandees(),
+                    c.getReferencesRecues());
         }
     }
 
@@ -62,13 +64,14 @@ public final class Dtos {
                                     BigDecimal candidatPretention, Integer noteGlobale, String synthese,
                                     Etape etape, String etapeLibelle, AvisClient avisClient,
                                     String commentaireClient, OffsetDateTime presenteLe,
-                                    EvaluationEntretienDto evaluationEntretien) {
+                                    EvaluationEntretienDto evaluationEntretien, Integer scoreTest, int referencesRecues) {
         public static ProfilPresenteDto of(Candidature c) {
             return new ProfilPresenteDto(c.getId(), c.getMissionId(), c.getMissionIntitule(), c.getCandidatNom(),
                     c.getCandidatTitre(), c.getCandidatExperience(), c.getCandidatVille(),
                     Dtos.competences(c.getCandidatCompetences()), c.getCandidatDisponibilite(), c.getCandidatPretention(),
                     c.getNoteGlobale(), c.getSynthese(), c.getEtape(), c.getEtape().libelle(), c.getAvisClient(),
-                    c.getCommentaireClient(), c.getPresenteLe(), EvaluationEntretienDto.of(c));
+                    c.getCommentaireClient(), c.getPresenteLe(), EvaluationEntretienDto.of(c), c.getScoreTest(),
+                    c.getReferencesRecues());
         }
     }
 
