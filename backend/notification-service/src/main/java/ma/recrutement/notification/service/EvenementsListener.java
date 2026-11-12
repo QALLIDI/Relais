@@ -15,6 +15,7 @@ import ma.recrutement.common.events.Events;
 import ma.recrutement.common.events.FactureEmiseEvent;
 import ma.recrutement.common.events.MissionAnnuleeEvent;
 import ma.recrutement.common.events.MissionOuverteEvent;
+import ma.recrutement.common.events.PropositionEvent;
 import ma.recrutement.common.events.RattachementEvent;
 import ma.recrutement.common.events.ReferenceDemandeeEvent;
 import ma.recrutement.common.events.TestEnvoyeEvent;
@@ -61,6 +62,8 @@ public class EvenementsListener {
             case Events.ENTRETIEN_PLANIFIE -> recus.traiter(message, EntretienPlanifieEvent.class, this::entretien);
             case Events.CANDIDAT_PLACE -> recus.traiter(message, CandidatPlaceEvent.class, this::placement);
             case Events.FACTURE_EMISE -> recus.traiter(message, FactureEmiseEvent.class, this::facture);
+            case Events.PROPOSITION_ENVOYEE, Events.PROPOSITION_ACCEPTEE, Events.PROPOSITION_REFUSEE ->
+                    recus.traiter(message, PropositionEvent.class, p -> proposition(recus.type(message), p));
             default -> {
                 // Événement sans notification associée.
             }
@@ -176,6 +179,41 @@ public class EvenementsListener {
 
     private static String prenom(String nom) {
         return nom == null || nom.isBlank() ? "" : nom.strip().split("\\s+")[0];
+    }
+
+    /** Proposition commerciale : envoyée au contact du client, sa réponse au recruteur. */
+    void proposition(String type, PropositionEvent e) {
+        String formule = switch (e.formule()) {
+            case "SUCCES" -> "au succès : %s %% du salaire annuel brut".formatted(e.taux() == null ? "?" : e.taux().stripTrailingZeros().toPlainString());
+            case "FORFAIT" -> "forfait de %s MAD par poste".formatted(montant(e.montant()));
+            default -> "abonnement de %s MAD par mois".formatted(montant(e.montant()));
+        };
+        if (Events.PROPOSITION_ENVOYEE.equals(type)) {
+            String lien = front + "/entreprise/factures";
+            String texte = "Votre recruteur vous propose une formule %s%s. Consultez-la et donnez votre accord : %s"
+                    .formatted(formule, e.poste() == null ? "" : " pour le poste de " + e.poste(), lien);
+            List<Mise.Info> infos = new java.util.ArrayList<>(List.of(new Mise.Info("Formule", formule)));
+            if (e.acomptePct() > 0) {
+                infos.add(new Mise.Info("Acompte à l'ouverture", e.acomptePct() + " %"));
+            }
+            if (e.garantieMois() > 0) {
+                infos.add(new Mise.Info("Garantie de remplacement", e.garantieMois() + " mois"));
+            }
+            notifier.notifier(e.contactEmail(), type, "Proposition commerciale" + (e.poste() == null ? "" : " : " + e.poste()), texte,
+                    new Mise(e.entrepriseNom(), List.of("Votre recruteur vous adresse une proposition commerciale"
+                            + (e.poste() == null ? "." : " pour le poste de " + e.poste() + ".")),
+                            infos, new Mise.Action("Voir et accepter", lien),
+                            "La mission démarre dès votre accord ; vous pouvez aussi refuser en indiquant pourquoi."));
+        } else {
+            boolean acceptee = Events.PROPOSITION_ACCEPTEE.equals(type);
+            notifier.notifier(recruteur, type, "Proposition %s par %s".formatted(acceptee ? "acceptée" : "refusée", e.entrepriseNom()),
+                    "%s a %s votre proposition (%s)%s.".formatted(e.entrepriseNom(), acceptee ? "accepté" : "refusé", formule,
+                            e.motifRefus() == null ? "" : ". Motif : " + e.motifRefus()));
+        }
+    }
+
+    private static String montant(java.math.BigDecimal v) {
+        return v == null ? "?" : NumberFormat.getIntegerInstance(Locale.FRENCH).format(v);
     }
 
     void shortlist(ShortlistEnvoyeeEvent e) {

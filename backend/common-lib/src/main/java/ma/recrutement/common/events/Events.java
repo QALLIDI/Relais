@@ -28,6 +28,9 @@ public final class Events {
     public static final String ENTRETIEN_PLANIFIE = "entretien.planifie";
     public static final String CANDIDAT_PLACE = "candidat.place";
     public static final String FACTURE_EMISE = "facture.emise";
+    public static final String PROPOSITION_ENVOYEE = "proposition.envoyee";
+    public static final String PROPOSITION_ACCEPTEE = "proposition.acceptee";
+    public static final String PROPOSITION_REFUSEE = "proposition.refusee";
 
     // Réunions (agenda-service)
     public static final String REUNION_PROPOSEE = "reunion.proposee";

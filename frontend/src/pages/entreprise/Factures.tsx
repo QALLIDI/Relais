@@ -2,13 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { api, telecharger } from '../../api/client';
 import { dateFr, libelleStatutFacture, n } from '../../api/format';
 import type { Facture } from '../../api/types';
-import { Chargement, Pill, toneFacture, Vide } from '../../components/ui';
+import { Chargement, Pill, TetePage, toneFacture, Vide } from '../../components/ui';
+import { ListePropositions } from '../../components/Propositions';
 
 export default function FacturesClient() {
   const factures = useQuery({ queryKey: ['factures'], queryFn: async () => (await api.get<Facture[]>('/api/factures')).data });
   return (
     <div className="page">
-      <h1>Factures</h1>
+      <TetePage titre="Factures et contrat" sous="Vos propositions commerciales, factures et attestations de paiement." />
+      <ListePropositions client />
       <section className="card">
         {factures.isLoading && <Chargement />}
         {factures.data?.length === 0 && <Vide>Aucune facture pour l'instant.</Vide>}

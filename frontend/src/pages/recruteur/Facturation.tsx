@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { api, messageErreur, telecharger } from '../../api/client';
 import { dateCourte, dateFr, initiales, libelleStatutFacture, mad, n } from '../../api/format';
 import type { Entreprise, FacturationStats, Facture, Placement } from '../../api/types';
-import { Chargement, Erreur, Kpi, Modal, Pill, toneFacture, Vide } from '../../components/ui';
+import { Chargement, Erreur, Icone, Kpi, Modal, Pill, toneFacture, Vide } from '../../components/ui';
+import { ListePropositions, PanneauProposition } from '../../components/Propositions';
 
 const FILTRES: (Facture['statut'] | 'TOUTES')[] = ['TOUTES', 'BROUILLON', 'EMISE', 'EN_RETARD', 'PAYEE'];
 const ICONES: Record<Facture['statut'], string> = { BROUILLON: 't-ink', EMISE: 't-peach', PAYEE: 't-green', EN_RETARD: 't-pink' };
@@ -11,6 +12,8 @@ const ICONES: Record<Facture['statut'], string> = { BROUILLON: 't-ink', EMISE: '
 export default function Facturation() {
   const qc = useQueryClient();
   const [nouvelle, setNouvelle] = useState(false);
+  const [proposition, setProposition] = useState(false);
+  const [message, setMessage] = useState('');
   const [filtre, setFiltre] = useState<Facture['statut'] | 'TOUTES'>('TOUTES');
   const stats = useQuery({ queryKey: ['facturation', 'stats'], queryFn: async () => (await api.get<FacturationStats>('/api/facturation/stats')).data });
   const factures = useQuery({ queryKey: ['factures'], queryFn: async () => (await api.get<Facture[]>('/api/factures')).data });
@@ -31,9 +34,12 @@ export default function Facturation() {
   return (
     <>
       <section className="header">
-        <div>
-          <h1>Facturation</h1>
-          <div className="sub">Montants en MAD HT</div>
+        <div className="stack" style={{ gap: 10 }}>
+          <div>
+            <h1>Facturation</h1>
+            <div className="sub">Montants en MAD HT</div>
+          </div>
+          <button type="button" className="btn primary" style={{ alignSelf: 'flex-start' }} onClick={() => setProposition(true)}>Nouvelle proposition commerciale <Icone nom="droite" taille={14} /></button>
         </div>
         <div className="kpis">
           <Kpi label="Facturé ce mois" value={n(stats.data?.factureCeMois)} />
@@ -43,6 +49,8 @@ export default function Facturation() {
         </div>
       </section>
       {action.error && <Erreur message={messageErreur(action.error)} />}
+      {message && <div className="alert info" role="status">{message}</div>}
+      {proposition && <PanneauProposition onFermer={() => setProposition(false)} onFait={(p) => { setProposition(false); setMessage(`Proposition envoyée à ${p.entrepriseNom}.`); }} />}
 
       <div className="row">
         <section className="card grow-main">
@@ -122,6 +130,8 @@ export default function Facturation() {
           </section>
         </aside>
       </div>
+
+      <ListePropositions />
 
       <section className="card">
         <h2 style={{ marginBottom: 12 }}>Placements</h2>
