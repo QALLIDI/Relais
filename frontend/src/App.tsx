@@ -4,6 +4,7 @@ import { hasAuthParams, useAuth } from 'react-oidc-context';
 import { setTokenProvider } from './api/client';
 import { lireSession } from './auth/auth';
 import RattachementEnAttente from './pages/entreprise/RattachementEnAttente';
+import Accueil from './pages/Accueil';
 import { CandidatLayout, EntrepriseLayout, RecruteurLayout } from './components/Layouts';
 import Dashboard from './pages/recruteur/Dashboard';
 import Missions from './pages/recruteur/Missions';
@@ -36,11 +37,18 @@ export default function App() {
   // Le jeton courant est lu à chaque appel API (il est renouvelé en silence).
   setTokenProvider(() => auth.user?.access_token);
 
+  // La page d'accueil publique (« / ») s'affiche sans connexion ; les autres adresses demandent de se connecter.
+  const surAccueil = location.pathname === '/' && !hasAuthParams();
+
   useEffect(() => {
-    if (!hasAuthParams() && !auth.isAuthenticated && !auth.activeNavigator && !auth.isLoading && !auth.error) {
+    if (!surAccueil && !hasAuthParams() && !auth.isAuthenticated && !auth.activeNavigator && !auth.isLoading && !auth.error) {
       void auth.signinRedirect();
     }
-  }, [auth]);
+  }, [auth, surAccueil]);
+
+  if (surAccueil && !auth.isLoading && !auth.isAuthenticated) {
+    return <Accueil />;
+  }
 
   if (auth.error) {
     return (

@@ -59,7 +59,8 @@ export default function Inscription() {
   const { theme, basculer } = useTheme();
   const [etat, setEtat] = useState<EtatInscription | null>(null);
   const [etape, setEtape] = useState(1);
-  const [type, setType] = useState<TypeCompte>('CANDIDAT');
+  // Type pré-choisi depuis la page d'accueil (?type=ENTREPRISE ou ?type=CANDIDAT).
+  const [type, setType] = useState<TypeCompte>(() => (new URLSearchParams(window.location.search).get('type') === 'ENTREPRISE' ? 'ENTREPRISE' : 'CANDIDAT'));
   const [chargement, setChargement] = useState(() => lireId() !== null);
   const [erreur, setErreur] = useState<string | null>(null);
 
