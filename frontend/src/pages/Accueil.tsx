@@ -1,7 +1,8 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useAuth } from 'react-oidc-context';
 import { useTheme } from '../components/theme';
 import { Icone } from '../components/ui';
+import { animerAccueil } from './accueilAnimations';
 import './accueil.css';
 
 type Public = 'entreprise' | 'candidat';
@@ -28,11 +29,24 @@ export default function Accueil() {
   const auth = useAuth();
   const { theme, basculer } = useTheme();
   const [pour, setPour] = useState<Public>('entreprise');
+  const racine = useRef<HTMLDivElement>(null);
+
+  // Animations GSAP chargées à la demande ; si le chargement échoue, la page reste simplement statique.
+  useEffect(() => {
+    const controle = new AbortController();
+    let arreter: (() => void) | undefined;
+    if (racine.current) {
+      animerAccueil(racine.current, controle.signal)
+        .then((f) => { arreter = f; })
+        .catch(() => { /* page statique */ });
+    }
+    return () => { controle.abort(); arreter?.(); };
+  }, []);
   const connexion = () => void auth.signinRedirect();
   const inscription = (type: Public) => window.location.assign(`/inscription?type=${type === 'entreprise' ? 'ENTREPRISE' : 'CANDIDAT'}`);
 
   return (
-    <div className="accueil">
+    <div className="accueil" ref={racine}>
       <a href="#contenu" className="evitement">Aller au contenu</a>
       <header className="acc-entete">
         <a href="/" className="acc-marque" aria-label="Recrut, accueil">
@@ -66,22 +80,22 @@ export default function Accueil() {
               <button type="button" aria-pressed={pour === 'candidat'} onClick={() => setPour('candidat')}>Je cherche un poste</button>
             </div>
             {pour === 'entreprise' ? (
-              <>
-                <h1>Les bons profils, <span>déjà présélectionnés.</span></h1>
+              <div key="entreprise" className="acc-bascule-contenu">
+                <h1><span>Les bons profils,</span> <span className="accent">déjà présélectionnés.</span></h1>
                 <p className="acc-chapeau">Nous trouvons, qualifions et testons les candidats pour vous. Vous ne rencontrez que ceux qui correspondent vraiment, et vous suivez tout depuis votre espace.</p>
                 <div className="acc-actions">
                   <button type="button" className="acc-btn plein grand" onClick={() => inscription('entreprise')}>Publier un besoin <Icone nom="droite" taille={16} /></button>
                   <a className="acc-btn grand" href="#etapes">Voir comment ça marche</a>
                 </div>
                 <div className="acc-chiffres">
-                  <div><b>10 jours</b><span>notre objectif pour une shortlist</span></div>
-                  <div><b>3 profils</b><span>argumentés et testés par poste</span></div>
+                  <div><b><span data-compte="10">10</span> jours</b><span>notre objectif pour une shortlist</span></div>
+                  <div><b><span data-compte="3">3</span> profils</b><span>argumentés et testés par poste</span></div>
                   <div><b>Garantie</b><span>de remplacement incluse</span></div>
                 </div>
-              </>
+              </div>
             ) : (
-              <>
-                <h1>Un profil, <span>et les bonnes offres viennent à vous.</span></h1>
+              <div key="candidat" className="acc-bascule-contenu">
+                <h1><span>Un profil,</span> <span className="accent">et les bonnes offres viennent à vous.</span></h1>
                 <p className="acc-chapeau">Créez votre profil une fois. Votre recruteur vous propose les postes qui vous correspondent, vous prépare aux entretiens et vous répond toujours.</p>
                 <div className="acc-actions">
                   <button type="button" className="acc-btn plein grand" onClick={() => inscription('candidat')}>Créer mon profil <Icone nom="droite" taille={16} /></button>
@@ -92,7 +106,7 @@ export default function Accueil() {
                   <div><b>Suivi</b><span>de chaque candidature, en direct</span></div>
                   <div><b>Vos données</b><span>protégées, loi 09-08</span></div>
                 </div>
-              </>
+              </div>
             )}
           </div>
 
@@ -102,7 +116,7 @@ export default function Accueil() {
               {[['YB', 'Yassine B.', 'Java · 7 ans · Casablanca', 92], ['RM', 'Rania M.', 'Java · 6 ans · Mohammedia', 88], ['MS', 'Mehdi S.', 'Back-end · 5 ans · Rabat', 79]].map(([i, n, d, s]) => (
                 <div key={i as string} className="profil">
                   <span className="av">{i}</span><span className="t"><b>{n}</b><small>{d}</small></span>
-                  <span className="score"><b>{s} %</b><i><i style={{ width: `${s}%` }} /></i></span>
+                  <span className="score"><b><span data-compte={s}>{s}</span> %</b><i><i style={{ width: `${s}%` }} /></i></span>
                 </div>
               ))}
             </div>

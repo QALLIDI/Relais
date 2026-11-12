@@ -38,13 +38,25 @@
 .acc-bascule button { border: 0; background: transparent; border-radius: 999px; padding: 8px 16px; font: inherit; font-size: 14px; color: var(--ink-2); cursor: pointer; }
 .acc-bascule button[aria-pressed='true'] { background: var(--inverse); color: var(--inverse-ink); font-weight: 500; }
 .acc-hero h1 { font-size: clamp(34px, 4.4vw, 58px); line-height: 1.04; }
-.acc-hero h1 span { display: block; color: var(--accent-strong); }
+.acc-hero h1 > span { display: block; }
+.acc-hero h1 > .accent { color: var(--accent-strong); }
+.acc-bascule-contenu { display: flex; flex-direction: column; gap: 22px; }
+/* Changement « Je recrute / Je cherche un poste » : fondu court, sans glissement si l'utilisateur réduit les animations. */
+@media (prefers-reduced-motion: no-preference) {
+  .acc-bascule-contenu { animation: acc-bascule-entree 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
+  @keyframes acc-bascule-entree { from { opacity: 0; transform: translateY(8px); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .acc-bascule-contenu { animation: acc-bascule-fondu 0.2s linear; }
+  @keyframes acc-bascule-fondu { from { opacity: 0; } }
+}
+.acc-chiffres b span[data-compte], .acc-carte .score span[data-compte] { font: inherit; color: inherit; line-height: inherit; font-variant-numeric: tabular-nums; }
 .acc-chapeau { margin: 0; font-size: 17px; line-height: 1.6; color: var(--ink-2); max-width: 560px; }
 .acc-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .acc-chiffres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .acc-chiffres div { background: var(--surface); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
 .acc-chiffres b { font-size: 22px; font-weight: 500; }
-.acc-chiffres span { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+.acc-chiffres div > span { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
 @media (max-width: 560px) { .acc-chiffres { grid-template-columns: minmax(0, 1fr); } }
 
 .acc-visuel { position: relative; min-height: 520px; border-radius: 28px; background: linear-gradient(140deg, #fbf0f0 0%, #eef4fd 50%, #eaf7f0 100%); padding: 34px; }
