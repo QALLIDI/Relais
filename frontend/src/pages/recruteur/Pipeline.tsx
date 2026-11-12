@@ -237,7 +237,7 @@ function CarteCandidat({ c, choisi, onChoisir, onEvaluer, onRefuser, onPlacer }:
           <span>{c.competences[0] ?? c.candidatTitre}, {c.candidatExperience} ans</span>
         </div>
         {onChoisir && (
-          <label className="coche" title="Ajouter à la shortlist">
+          <label className="case-shortlist" title="Ajouter à la shortlist">
             <input type="checkbox" checked={choisi} onChange={onChoisir} />
             <span className="sr-only">Ajouter {c.candidatNom} à la shortlist</span>
           </label>

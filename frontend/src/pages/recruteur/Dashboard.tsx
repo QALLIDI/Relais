@@ -100,7 +100,7 @@ export default function Dashboard() {
           <section className="bloc" aria-labelledby="activites">
             <div className="bloc-tete">
               <h2 id="activites">Dernières activités</h2>
-              <Link to="/recruteur/notifications" className="lien">Tout voir</Link>
+              <Link to="/recruteur/notifications" className="lien-discret">Tout voir</Link>
             </div>
             {candidatures.isLoading ? <div className="bloc-corps"><Chargement /></div>
               : activites.length === 0 ? <div className="bloc-corps"><Vide>Rien de nouveau sur cette période.</Vide></div>
@@ -128,7 +128,7 @@ export default function Dashboard() {
           <section className="bloc" aria-labelledby="reunions">
             <div className="bloc-tete">
               <h2 id="reunions">Prochaines réunions</h2>
-              <Link to="/recruteur/agenda" className="lien">Agenda</Link>
+              <Link to="/recruteur/agenda" className="lien-discret">Agenda</Link>
             </div>
             <div className="bloc-corps">
               {reunions.isLoading && <Chargement />}
