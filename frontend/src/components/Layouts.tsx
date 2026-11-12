@@ -8,6 +8,7 @@ import type { Entreprise } from '../api/types';
 import { FenetresGlobales } from './FenetresGlobales';
 import { useTheme } from './theme';
 import { Icone, type NomIcone } from './ui';
+import { Logo } from './Logo';
 
 type Lien = { to: string; label: string; icone: NomIcone; end?: boolean };
 type Groupe = { titre: string; liens: Lien[] };
@@ -31,18 +32,6 @@ export function useFilAriane(miettes: Miette[] | null) {
     return () => definir(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cle, definir]);
-}
-
-/** Logo Recrut : la seule touche d'orange de l'application, avec la pastille de notification. */
-function Logo() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
-      <rect width="30" height="30" rx="9" fill="#17181c" />
-      <circle cx="11" cy="11" r="3.6" fill="#ffffff" />
-      <circle cx="19" cy="19" r="3.6" fill="#e8622a" />
-      <path d="M10 20L20 10" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" />
-    </svg>
-  );
 }
 
 function useNom() {

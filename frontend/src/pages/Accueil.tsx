@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useAuth } from 'react-oidc-context';
 import { useTheme } from '../components/theme';
 import { Icone } from '../components/ui';
+import { Logo } from '../components/Logo';
 import { animerAccueil } from './accueilAnimations';
 import './accueil.css';
 
@@ -50,10 +51,7 @@ export default function Accueil() {
       <a href="#contenu" className="evitement">Aller au contenu</a>
       <header className="acc-entete">
         <a href="/" className="acc-marque" aria-label="Recrut, accueil">
-          <svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true">
-            <rect width="30" height="30" rx="9" fill="#17181c" /><circle cx="11" cy="11" r="3.6" fill="#fff" /><circle cx="19" cy="19" r="3.6" fill="#e8622a" />
-            <path d="M10 20L20 10" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
-          </svg>
+          <Logo taille={28} />
           <b>Recrut</b>
         </a>
         <nav className="acc-nav" aria-label="Sections">

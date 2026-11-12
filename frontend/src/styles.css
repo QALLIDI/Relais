@@ -1,7 +1,7 @@
 /* Design « Épuré » : barre latérale claire, cartes blanches bordées d'un filet gris, police Inter.
    Trois rôles de couleur seulement : neutres, bleu clair pour l'action, vert / ambre / rouge pour les statuts.
    Deux pastels au sens fixe : lavande (entretiens, missions) et menthe (shortlist, validé).
-   L'orange de la marque est réservé au logo et à la pastille de notification.
+   Le logo reprend le bleu d'action ; l'orange ne sert plus qu'à la pastille de notification.
    Toutes les couleurs passent par des variables : le mode sombre ne fait que les redéfinir. */
 :root {
   --canvas: #ecedef;
@@ -918,3 +918,34 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .proposition-ligne .txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .proposition-ligne .txt b { font-size: 14px; font-weight: 500; }
 .proposition-ligne .txt span { font-size: 12.5px; color: var(--muted); }
+
+/* ---------- Profils regroupés ---------- */
+.grp-repartition { padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 14px; }
+.grp-repartition-tete { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px; }
+.grp-surtitre { font-size: 12.5px; font-weight: 400; color: var(--muted); margin: 0; }
+.grp-nombre { display: block; font-size: 28px; font-weight: 500; line-height: 1.15; }
+.grp-filtre { flex: 0 1 300px; }
+.grp-filtre input { width: 100%; }
+.grp-barre { display: flex; gap: 3px; height: 10px; border-radius: 999px; overflow: hidden; }
+.grp-barre span { min-width: 6px; }
+.grp-legende { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.grp-legende a { display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px 5px 8px; border-radius: 999px; background: var(--sunken); color: var(--ink-2); text-decoration: none; font-size: 13px; }
+.grp-legende a:hover { color: var(--ink); }
+.grp-legende i, .grp-carte-tete i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.grp-legende .nb { color: var(--muted); font-variant-numeric: tabular-nums; }
+/* Colonnes « maçonnerie » : les cartes de hauteurs différentes s'empilent sans trous. */
+.grp-colonnes { columns: 3 320px; column-gap: 16px; }
+.grp-carte { break-inside: avoid; margin-bottom: 16px; display: inline-block; width: 100%; scroll-margin-top: 90px; }
+.grp-carte-tete { display: flex; align-items: center; gap: 10px; padding: 16px 16px 8px; }
+.grp-carte-tete h2 { flex: 1; min-width: 0; font-size: 16px; font-weight: 500; }
+.grp-liste { list-style: none; margin: 0; padding: 0 8px 8px; }
+.grp-liste li + li { border-top: 1px solid var(--line); }
+.grp-liste a { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-radius: 12px; text-decoration: none; color: inherit; }
+.grp-liste a:hover { background: var(--sunken); }
+.grp-liste .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.grp-liste .ligne { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.grp-liste .ligne b { font-size: 14px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grp-liste .sous { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+.grp-dispo { flex: none; font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.grp-dispo.ok { color: var(--ok); }
+.grp-dispo.attente { color: var(--warn); }
