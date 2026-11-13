@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { kmad, n } from '../../api/format';
 import type { FacturationStats, MissionStats, SelectionStats, VivierStats } from '../../api/types';
-import { Barre, Batons, Kpi, Vide } from '../../components/ui';
+import { Barre, Batons, Indicateur, TetePage, Vide } from '../../components/ui';
 
 export default function Statistiques() {
   const selection = useQuery({ queryKey: ['selection', 'stats'], queryFn: async () => (await api.get<SelectionStats>('/api/selection/stats')).data });
@@ -18,82 +18,86 @@ export default function Statistiques() {
   const maxSource = Math.max(1, ...sources.map(([, v]) => v));
   const competences = missions.data?.competencesDemandees ?? [];
   const maxComp = Math.max(1, ...competences.map((c) => c.missions));
+  const clients = factu.data?.parClient ?? [];
+  const tiret = (v?: number | null) => (v == null ? '—' : v);
 
   return (
     <>
-      <section className="header">
-        <div>
-          <h1>Statistiques</h1>
-          <div className="sub">Toutes périodes confondues, sauf mention contraire</div>
-        </div>
-        <div className="kpis">
-          <Kpi label="Placements" value={selection.data?.placements ?? '—'} />
-          <Kpi label="Délai moyen de placement" value={selection.data?.delaiMoyenPlacementJours ?? '—'} unit="jours" />
-          <Kpi label="Présentés → placés" value={selection.data?.tauxPresentesPlaces ?? '—'} unit="%" />
-          <Kpi label="CA encaissé sur 6 mois" value={n(totalCa)} unit="k MAD" />
-        </div>
+      <TetePage titre="Statistiques" sous="Toutes périodes confondues, sauf mention contraire." />
+
+      <section className="indicateurs" aria-label="Indicateurs clés">
+        <Indicateur label="Placements" valeur={tiret(selection.data?.placements)} note={`${tiret(factu.data?.placements)} facturé(s)`} ton="vert" />
+        <Indicateur label="Délai moyen de placement" valeur={tiret(selection.data?.delaiMoyenPlacementJours)} unite="jours"
+          note={`shortlist en ${tiret(selection.data?.delaiMoyenShortlistJours)} j en moyenne`} ton="lavande" />
+        <Indicateur label="Présentés → placés" valeur={tiret(selection.data?.tauxPresentesPlaces)} unite="%" note="taux de transformation" />
+        <Indicateur label="CA encaissé" coin="6 mois" valeur={n(totalCa)} unite="k MAD" note="hors taxes" tendance={ca.map((m) => m.valeur)} ton="ambre" />
       </section>
 
       <div className="grid-2">
-        <section className="card">
-          <div className="card-head">
-            <h2>Chiffre d'affaires encaissé</h2>
-            <span className="muted small">k MAD HT · total {n(totalCa)}</span>
+        <section className="bloc" aria-labelledby="st-ca">
+          <div className="bloc-tete"><h2 id="st-ca">Chiffre d'affaires encaissé</h2><span className="lien-discret">k MAD HT · par mois</span></div>
+          <div className="bloc-corps">
+            {ca.length ? <Batons donnees={ca} unite="k" label="CA encaissé par mois en milliers de MAD" /> : <Vide>Aucun encaissement.</Vide>}
           </div>
-          {ca.length ? <Batons donnees={ca} unite="k" label="CA encaissé par mois en milliers de MAD" /> : <Vide>Aucun encaissement.</Vide>}
         </section>
 
-        <section className="card stack" style={{ gap: 14 }}>
-          <div className="card-head" style={{ margin: 0 }}>
-            <h2>Entonnoir de pré-sélection</h2>
+        <section className="bloc" aria-labelledby="st-entonnoir">
+          <div className="bloc-tete">
+            <h2 id="st-entonnoir">Entonnoir de présélection</h2>
             <span className="pill info">{selection.data?.tauxPresentesPlaces ?? 0} % des présentés placés</span>
           </div>
-          {entonnoir.map((e, i) => {
-            const precedent = entonnoir[i - 1];
-            const conv = precedent && precedent.nombre > 0 ? Math.round((e.nombre / precedent.nombre) * 100) : null;
-            return (
-              <div key={e.etape} style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 150px) 1fr 36px 48px', gap: 12, alignItems: 'center', fontSize: 14 }}
-                title={`${e.libelle} : ${e.nombre} candidat(s)`}>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.libelle}</span>
-                <div className="barre" style={{ height: 22 }}>
-                  <div style={{ width: `${premier ? Math.round((e.nombre / premier) * 100) : 0}%`, background: i === entonnoir.length - 1 ? 'var(--accent-strong)' : 'var(--accent)' }} />
+          <div className="bloc-corps st-entonnoir">
+            {entonnoir.length === 0 && <Vide>Aucune candidature pour l'instant.</Vide>}
+            {entonnoir.map((e, i) => {
+              const precedent = entonnoir[i - 1];
+              const conv = precedent && precedent.nombre > 0 ? Math.round((e.nombre / precedent.nombre) * 100) : null;
+              return (
+                <div key={e.etape} className="st-etape" title={`${e.libelle} : ${e.nombre} candidat(s)`}>
+                  <span className="lib">{e.libelle}</span>
+                  <div className="barre"><div style={{ width: `${premier ? Math.round((e.nombre / premier) * 100) : 0}%`, background: i === entonnoir.length - 1 ? 'var(--accent-strong)' : 'var(--accent)' }} /></div>
+                  <b className="mono">{e.nombre}</b>
+                  <span className="conv">{conv != null ? `${conv} %` : ''}</span>
                 </div>
-                <b className="mono" style={{ textAlign: 'right' }}>{e.nombre}</b>
-                <span className="muted small" style={{ textAlign: 'right' }}>{conv != null ? `${conv} %` : ''}</span>
-              </div>
-            );
-          })}
-          <div className="muted small">Candidats ayant atteint chaque étape ; à droite, la part passée depuis l'étape précédente.</div>
+              );
+            })}
+            {entonnoir.length > 0 && <p className="st-note">Candidats ayant atteint chaque étape ; à droite, la part passée depuis l'étape précédente.</p>}
+          </div>
         </section>
       </div>
 
       <div className="grid-3">
-        <section className="card">
-          <h2 style={{ marginBottom: 12 }}>Placements et CA par client</h2>
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>Client</th><th className="num">Placés</th><th className="num">Facturé (k MAD)</th></tr></thead>
-              <tbody>
-                {factu.data?.parClient.map((c) => (
-                  <tr key={c.entreprise}><td>{c.entreprise}</td><td className="num">{c.placements}</td><td className="num">{kmad(Number(c.montantHt))}</td></tr>
-                ))}
-              </tbody>
-            </table>
+        <section className="bloc" aria-labelledby="st-clients">
+          <div className="bloc-tete"><h2 id="st-clients">Placements et CA par client</h2></div>
+          {clients.length === 0 ? <div className="bloc-corps"><Vide>Aucun placement facturé.</Vide></div> : (
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>Client</th><th className="num">Placés</th><th className="num">Facturé (k MAD)</th></tr></thead>
+                <tbody>
+                  {clients.map((c) => (
+                    <tr key={c.entreprise}><td>{c.entreprise}</td><td className="num">{c.placements}</td><td className="num">{kmad(Number(c.montantHt))}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+        <section className="bloc" aria-labelledby="st-sources">
+          <div className="bloc-tete">
+            <h2 id="st-sources">Origine des profils</h2>
+            <span className="lien-discret">{vivier.data?.total ?? 0} profils · +{vivier.data?.ajoutesCeMois ?? 0} ce mois</span>
+          </div>
+          <div className="bloc-corps st-barres">
+            {sources.length === 0 ? <Vide>Aucun profil.</Vide> : sources.map(([s, v]) => <Barre key={s} label={s} valeur={v} max={maxSource} />)}
           </div>
         </section>
-        <section className="card stack" style={{ gap: 12 }}>
-          <div>
-            <h2>Origine des profils</h2>
-            <div className="muted small">{vivier.data?.total ?? 0} profils · {vivier.data?.ajoutesCeMois ?? 0} ajoutés ce mois</div>
+        <section className="bloc" aria-labelledby="st-comp">
+          <div className="bloc-tete">
+            <h2 id="st-comp">Compétences les plus demandées</h2>
+            <span className="lien-discret">en nombre de missions</span>
           </div>
-          {sources.map(([s, v]) => <Barre key={s} label={s} valeur={v} max={maxSource} />)}
-        </section>
-        <section className="card stack" style={{ gap: 12 }}>
-          <div>
-            <h2>Compétences les plus demandées</h2>
-            <div className="muted small">nombre de missions qui les exigent · shortlist en {selection.data?.delaiMoyenShortlistJours ?? '—'} j en moyenne</div>
+          <div className="bloc-corps st-barres">
+            {competences.length === 0 ? <Vide>Aucune mission.</Vide> : competences.map((c) => <Barre key={c.competence} label={c.competence} valeur={c.missions} max={maxComp} />)}
           </div>
-          {competences.map((c) => <Barre key={c.competence} label={c.competence} valeur={c.missions} max={maxComp} />)}
         </section>
       </div>
     </>

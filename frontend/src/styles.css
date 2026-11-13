@@ -435,7 +435,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .card.accent .progress > div.on { background: var(--accent); }
 .colonnes { display: flex; align-items: flex-end; gap: 14px; height: 210px; padding-top: 30px; }
 .colonnes > div { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 8px; }
-.colonnes .baton { width: 100%; max-width: 42px; border-radius: 12px; background: var(--sunken); min-height: 6px; }
+.colonnes .baton { width: 100%; max-width: 42px; border-radius: 12px; background: var(--accent-soft); min-height: 6px; }
 .colonnes .baton.top { background: var(--accent); }
 .colonnes .bulle { background: var(--inverse); color: var(--inverse-ink); font-size: 12px; border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
 .colonnes .mois { font-size: 12px; color: var(--muted); }
@@ -949,3 +949,37 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .grp-dispo { flex: none; font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap; }
 .grp-dispo.ok { color: var(--ok); }
 .grp-dispo.attente { color: var(--warn); }
+
+/* ---------- Vivier ---------- */
+.vv-filtres { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; padding: 14px 16px; }
+.vv-q { flex: 1 1 260px; }
+.vv-q input { width: 100%; }
+.vv-champ { display: flex; flex-direction: column; gap: 4px; flex: 0 1 150px; min-width: 120px; font-size: 12px; color: var(--muted); }
+.vv-champ input, .vv-champ select { min-height: 40px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 0 12px; font: inherit; font-size: 13.5px; color: var(--ink); width: 100%; }
+.vv-champ input:focus-visible, .vv-champ select:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.vv-boutons { display: flex; gap: 8px; }
+.vv-table { min-width: 860px; }
+.vv-table tbody tr { cursor: pointer; }
+.vv-table tbody tr:hover td { background: var(--sunken); }
+.vv-table td:last-child { color: var(--muted); width: 40px; }
+.vv-nom { display: block; color: var(--ink); text-decoration: none; }
+.vv-nom:hover { color: var(--accent-ink); }
+.vv-sous { display: block; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vv-table .mono-av { width: 34px; height: 34px; }
+.mono-av.vv-dispo { position: relative; }
+.mono-av.vv-dispo::after { content: ''; position: absolute; right: -3px; bottom: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--ok-solid); border: 2px solid var(--surface); }
+@media (max-width: 760px) {
+  .vv-table { min-width: 0; }
+  .vv-table .vv-col-comp, .vv-table .vv-col-sal, .vv-table th:nth-child(2), .vv-table td:nth-child(2), .vv-table th:nth-child(4), .vv-table td:nth-child(4) { display: none; }
+  .vv-champ { flex: 1 1 140px; }
+}
+
+/* ---------- Statistiques ---------- */
+.st-entonnoir { display: flex; flex-direction: column; gap: 10px; }
+.st-etape { display: grid; grid-template-columns: minmax(90px, 150px) 1fr 40px 44px; gap: 12px; align-items: center; font-size: 13.5px; }
+.st-etape .lib { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-etape .barre { height: 18px; }
+.st-etape b { text-align: right; font-weight: 500; }
+.st-etape .conv { text-align: right; font-size: 12.5px; color: var(--muted); }
+.st-note { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); }
+.st-barres { display: flex; flex-direction: column; gap: 10px; }

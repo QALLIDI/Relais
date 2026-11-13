@@ -1,102 +1,120 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { type FormEvent, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { api } from '../../api/client';
 import { initiales, libelleNiveau, mad } from '../../api/format';
 import type { CandidatResume, VivierStats } from '../../api/types';
-import { Chargement, Icone, Pill, Tags, TEINTES, Vide } from '../../components/ui';
+import { Chargement, Icone, Segments, TetePage, Vide } from '../../components/ui';
 
-const DISPOS = [
-  { cle: '', libelle: 'Toutes' },
-  { cle: 'IMMEDIATE', libelle: 'Immédiate' },
-  { cle: 'UN_MOIS', libelle: 'Sous 1 mois' },
-  { cle: 'TROIS_MOIS', libelle: 'Sous 3 mois' },
+type Dispo = '' | 'IMMEDIATE' | 'UN_MOIS' | 'TROIS_MOIS';
+const DISPOS: { v: Dispo; l: string }[] = [
+  { v: '', l: 'Toutes' },
+  { v: 'IMMEDIATE', l: 'Immédiate' },
+  { v: 'UN_MOIS', l: 'Sous 1 mois' },
+  { v: 'TROIS_MOIS', l: 'Sous 3 mois' },
 ];
-const VIDE = { q: '', ville: '', niveau: '', disponibilite: '', competence: '', secteur: '' };
+const VIDE = { q: '', ville: '', niveau: '', disponibilite: '' as Dispo, competence: '', secteur: '' };
+type Filtres = typeof VIDE;
+
+const tonDispo = (d?: string) => (d === 'IMMEDIATE' || d === 'UN_MOIS' ? 'ok' : 'attente');
+const experience = (ans?: number | null) => (ans && ans > 0 ? `${ans} an${ans > 1 ? 's' : ''}` : null);
 
 export default function Vivier() {
+  const naviguer = useNavigate();
   const [params] = useSearchParams();
-  const [filtres, setFiltres] = useState({ ...VIDE, q: params.get('q') ?? '' });
-  const [appliques, setAppliques] = useState(filtres);
+  const [filtres, setFiltres] = useState<Filtres>({ ...VIDE, q: params.get('q') ?? '' });
+  const [appliques, setAppliques] = useState<Filtres>(filtres);
   const requete = Object.fromEntries(Object.entries(appliques).filter(([, v]) => v));
   const resultats = useQuery({
     queryKey: ['candidats', requete],
     queryFn: async () => (await api.get<CandidatResume[]>('/api/candidats', { params: requete })).data,
   });
   const stats = useQuery({ queryKey: ['candidats', 'stats'], queryFn: async () => (await api.get<VivierStats>('/api/candidats/stats')).data });
-  const maj = (k: keyof typeof filtres) => (e: { target: { value: string } }) => setFiltres({ ...filtres, [k]: e.target.value });
-  const choisirDispo = (d: string) => { const f = { ...filtres, disponibilite: d }; setFiltres(f); setAppliques(f); };
+
+  const maj = (k: keyof Filtres) => (e: { target: { value: string } }) => setFiltres({ ...filtres, [k]: e.target.value });
+  const appliquer = (f: Filtres) => { setFiltres(f); setAppliques(f); };
+  const envoyer = (e: FormEvent) => { e.preventDefault(); setAppliques(filtres); };
+  // Filtres avancés actifs (hors recherche libre et disponibilité, qui ont leur propre contrôle).
+  const actifs = (['ville', 'secteur', 'competence', 'niveau'] as const).filter((k) => appliques[k]).length;
+  const modifie = JSON.stringify(filtres) !== JSON.stringify(appliques);
+  const liste = resultats.data ?? [];
 
   return (
     <>
-      <section className="header">
-        <div>
-          <h1>Vivier de candidats</h1>
-          <div className="sub">
-            {stats.data ? `${stats.data.total} profils · ${stats.data.ajoutesCeMois} ajoutés ce mois` : ''}
-            {appliques.q ? ` · recherche « ${appliques.q} »` : ''}
-          </div>
-        </div>
-        <div className="actions">
-          <div className="tabs" role="group" aria-label="Disponibilité">
-            {DISPOS.map((d) => (
-              <button key={d.cle} className={`tab ${appliques.disponibilite === d.cle ? 'on' : ''}`} aria-pressed={appliques.disponibilite === d.cle} onClick={() => choisirDispo(d.cle)}>{d.libelle}</button>
-            ))}
-          </div>
-          <Link className="btn primary" to="/recruteur/vivier/nouveau">Ajouter un candidat</Link>
-        </div>
-      </section>
+      <TetePage titre="Vivier de candidats" sous={stats.data ? `${stats.data.total} profils · ${stats.data.ajoutesCeMois} ajoutés ce mois` : undefined}>
+        <Segments label="Disponibilité" options={DISPOS} valeur={appliques.disponibilite} onChange={(d) => appliquer({ ...filtres, disponibilite: d })} />
+        <Link className="btn primary" to="/recruteur/vivier/nouveau"><Icone nom="plus" taille={16} />Ajouter un candidat</Link>
+      </TetePage>
 
-      <form role="search" onSubmit={(e) => { e.preventDefault(); setAppliques(filtres); }} style={{ display: 'flex', gap: 8 }}>
-        <label htmlFor="q" className="sr-only">Rechercher dans le vivier</label>
-        <input id="q" className="input" style={{ flex: 1, background: 'var(--surface)' }} type="search"
-          placeholder="Rechercher : nom, titre, compétence…" value={filtres.q} onChange={maj('q')} />
-        <button type="submit" className="ico" aria-label="Rechercher"><Icone nom="loupe" /></button>
+      <form role="search" className="bloc vv-filtres" onSubmit={envoyer} aria-label="Rechercher dans le vivier">
+        <label className="recherche-courte vv-q">
+          <Icone nom="loupe" taille={16} />
+          <span className="sr-only">Nom, titre ou compétence</span>
+          <input type="search" placeholder="Nom, titre, compétence…" value={filtres.q} onChange={maj('q')} />
+        </label>
+        <label className="vv-champ"><span>Ville</span><input value={filtres.ville} onChange={maj('ville')} placeholder="Toutes" /></label>
+        <label className="vv-champ"><span>Secteur</span><input value={filtres.secteur} onChange={maj('secteur')} placeholder="Tous" /></label>
+        <label className="vv-champ"><span>Compétence</span><input value={filtres.competence} onChange={maj('competence')} placeholder="ex. Java" /></label>
+        <label className="vv-champ"><span>Niveau</span>
+          <select value={filtres.niveau} onChange={(e) => appliquer({ ...filtres, niveau: e.target.value })}>
+            <option value="">Tous</option><option value="JUNIOR">Junior</option><option value="CONFIRME">Confirmé</option><option value="SENIOR">Senior</option>
+          </select>
+        </label>
+        <div className="vv-boutons">
+          <button type="submit" className={`btn ${modifie ? 'primary' : ''}`}>Rechercher</button>
+          {(actifs > 0 || appliques.q || appliques.disponibilite) && (
+            <button type="button" className="btn" onClick={() => appliquer(VIDE)}>Effacer</button>
+          )}
+        </div>
       </form>
 
-      <div className="row">
-        <div className="grow-main" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 14 }}>
-          {resultats.isLoading && <Chargement />}
-          {resultats.data?.length === 0 && <Vide>Aucun profil ne correspond à ces critères.</Vide>}
-          {resultats.data?.map((c, i) => (
-            <article key={c.id} className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div className="personne">
-                <span className={`avatar ${c.disponibilite === 'IMMEDIATE' ? 'en-ligne' : ''} ${TEINTES[i % 5]}`} style={{ width: 48, height: 48, flexBasis: 48, fontSize: 15 }} aria-hidden="true">{initiales(c.nomComplet)}</span>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <Link to={`/recruteur/vivier/${c.id}`} className="nom" style={{ fontSize: 16, textDecoration: 'none' }}>{c.nomComplet}</Link>
-                  <div className="sous">{c.titre} · {c.anneesExperience} ans</div>
-                </div>
-                {c.niveau && <span className="pill dark">{libelleNiveau[c.niveau]}</span>}
-              </div>
-              <Tags items={c.competences.slice(0, 4)} />
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12, marginTop: 'auto' }}>
-                <Pill tone={c.disponibilite === 'IMMEDIATE' ? 'ok' : c.disponibilite === 'TROIS_MOIS' ? 'neutral' : 'warn'}>{c.disponibiliteLibelle}</Pill>
-                <span className="small muted">{c.ville ?? '—'} · {mad(c.pretentionSalaire)}</span>
-                <Link to={`/recruteur/vivier/${c.id}`} className="mini" aria-label={`Ouvrir la fiche de ${c.nomComplet}`}><Icone nom="fleche" taille={14} /></Link>
-              </div>
-            </article>
-          ))}
+      <section className="bloc" aria-labelledby="resultats">
+        <div className="bloc-tete">
+          <h2 id="resultats">{resultats.isLoading ? 'Recherche…' : `${liste.length} profil${liste.length > 1 ? 's' : ''}`}</h2>
+          {appliques.q && <span className="lien-discret">recherche « {appliques.q} »{actifs ? ` · ${actifs} filtre${actifs > 1 ? 's' : ''}` : ''}</span>}
         </div>
-
-        <aside className="card stack grow-side" aria-label="Filtres">
-          <div className="card-head" style={{ margin: 0 }}>
-            <h2>Filtres</h2>
-            <span className="muted small">{resultats.data?.length ?? 0} résultat(s)</span>
-          </div>
-          <label className="field">Ville<input value={filtres.ville} onChange={maj('ville')} /></label>
-          <label className="field">Secteur<input value={filtres.secteur} onChange={maj('secteur')} /></label>
-          <label className="field">Compétence exacte<input value={filtres.competence} onChange={maj('competence')} /></label>
-          <label className="field">Niveau
-            <select value={filtres.niveau} onChange={maj('niveau')}>
-              <option value="">Tous</option><option value="JUNIOR">Junior</option><option value="CONFIRME">Confirmé</option><option value="SENIOR">Senior</option>
-            </select>
-          </label>
-          <div className="actions">
-            <button className="btn primary" onClick={() => setAppliques(filtres)}>Appliquer</button>
-            <button className="btn" onClick={() => { setFiltres(VIDE); setAppliques(VIDE); }}>Effacer</button>
-          </div>
-        </aside>
-      </div>
+        {resultats.isLoading ? <div className="bloc-corps"><Chargement /></div>
+          : liste.length === 0 ? <div className="bloc-corps"><Vide>Aucun profil ne correspond à ces critères.</Vide></div>
+          : (
+            <div className="table-wrap">
+              <table className="vv-table">
+                <thead>
+                  <tr><th>Candidat</th><th>Niveau</th><th className="vv-col-comp">Compétences</th><th>Ville</th><th className="num vv-col-sal">Prétention</th><th>Disponibilité</th><th aria-label="Ouvrir" /></tr>
+                </thead>
+                <tbody>
+                  {liste.map((c) => {
+                    const sous = [c.titre, experience(c.anneesExperience)].filter(Boolean).join(' · ') || 'Profil à compléter';
+                    const reste = c.competences.length - 3;
+                    return (
+                      <tr key={c.id} onClick={() => naviguer(`/recruteur/vivier/${c.id}`)}>
+                        <td>
+                          <div className="personne" style={{ gap: 10 }}>
+                            <span className={`mono-av ${c.disponibilite === 'IMMEDIATE' ? 'vv-dispo' : ''}`} aria-hidden="true">{initiales(c.nomComplet)}</span>
+                            <span style={{ minWidth: 0 }}>
+                              <Link to={`/recruteur/vivier/${c.id}`} className="nom vv-nom" onClick={(e) => e.stopPropagation()}>{c.nomComplet}</Link>
+                              <span className="sous vv-sous">{sous}</span>
+                            </span>
+                          </div>
+                        </td>
+                        <td>{c.niveau ? <span className="pill neutral">{libelleNiveau[c.niveau]}</span> : <span className="muted">—</span>}</td>
+                        <td className="vv-col-comp">
+                          <div className="tags">
+                            {c.competences.slice(0, 3).map((t) => <span key={t} className="tag">{t}</span>)}
+                            {reste > 0 && <span className="tag contour" title={c.competences.slice(3).join(', ')}>+{reste}</span>}
+                          </div>
+                        </td>
+                        <td className="muted">{c.ville ?? '—'}</td>
+                        <td className="num muted vv-col-sal">{mad(c.pretentionSalaire)}</td>
+                        <td><span className={`grp-dispo ${tonDispo(c.disponibilite)}`}>{c.disponibiliteLibelle}</span></td>
+                        <td className="num"><Icone nom="droite" taille={16} /></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+      </section>
     </>
   );
 }
