@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { useAuth } from 'react-oidc-context';
 import { api } from '../../api/client';
 import { initiales, ilYa, joursRestants, libelleJours, n, parSemaine } from '../../api/format';
+import { totalNonLus, useMessagesNonLus } from '../../api/messagerie';
 import { fmtHeure, fmtJour, memeJour, useReunions } from '../../api/reunions';
 import type { Candidature, FacturationStats, Facture, Mission, MissionResume, SelectionStats } from '../../api/types';
 import { versFenetre } from '../../components/Fenetre';
@@ -30,6 +31,8 @@ export default function Dashboard() {
   const factures = useQuery({ queryKey: ['factures'], queryFn: async () => (await api.get<Facture[]>('/api/factures')).data });
   const reunions = useReunions();
   const demandes = useDemandesRattachement();
+  const messages = useMessagesNonLus();
+  const nbMessages = totalNonLus(messages.data);
 
   const maintenant = new Date();
   const depuis = new Date(maintenant.getTime() - DUREES[periode] * 86400000);
@@ -91,6 +94,9 @@ export default function Dashboard() {
               <Link to="/recruteur/pipeline"><span className="nb">{aQualifier}</span><span className="txt"><b>Préqualifications</b><span className="s">Candidats à appeler</span></span><Icone nom="droite" taille={16} /></Link>
               <Link to="/recruteur/pipeline"><span className="nb">{aPresenter}</span><span className="txt"><b>Profils à présenter</b><span className="s">Qualifiés, prêts pour la shortlist</span></span><Icone nom="droite" taille={16} /></Link>
               <Link to="/recruteur/agenda"><span className="nb">{aEvaluer}</span><span className="txt"><b>Entretiens à évaluer</b><span className="s">Retour client attendu</span></span><Icone nom="droite" taille={16} /></Link>
+              {nbMessages > 0 && (
+                <Link to="/recruteur/messages"><span className="nb">{nbMessages}</span><span className="txt"><b>Messages non lus</b><span className="s">{messages.data!.length === 1 ? messages.data![0].entrepriseNom : `${messages.data!.length} clients vous ont écrit`}</span></span><Icone nom="droite" taille={16} /></Link>
+              )}
               {(demandes.data?.length ?? 0) > 0 && (
                 <Link to="/recruteur/entreprises"><span className="nb">{demandes.data!.length}</span><span className="txt"><b>Demandes d'accès</b><span className="s">Comptes entreprise à rattacher</span></span><Icone nom="droite" taille={16} /></Link>
               )}

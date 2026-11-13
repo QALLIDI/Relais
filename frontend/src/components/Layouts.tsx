@@ -9,8 +9,9 @@ import { FenetresGlobales } from './FenetresGlobales';
 import { useTheme } from './theme';
 import { Icone, type NomIcone } from './ui';
 import { Logo } from './Logo';
+import { totalNonLus, useMessagesNonLus } from '../api/messagerie';
 
-type Lien = { to: string; label: string; icone: NomIcone; end?: boolean };
+type Lien = { to: string; label: string; icone: NomIcone; end?: boolean; compte?: number };
 type Groupe = { titre: string; liens: Lien[] };
 export type Miette = { label: string; to?: string };
 
@@ -106,6 +107,7 @@ function Cadre({ classe, espace, accueil, sous, groupes, notifications, recherch
                 {g.liens.map((l) => (
                   <NavLink key={l.to} to={l.to} end={l.end} className="side-link" title={replie ? l.label : undefined}>
                     <Icone nom={l.icone} taille={18} /><span className="libelle">{l.label}</span>
+                    {l.compte ? <span className="compte" aria-label={`${l.compte} non lu${l.compte > 1 ? 's' : ''}`}>{l.compte}</span> : null}
                   </NavLink>
                 ))}
               </nav>
@@ -148,6 +150,7 @@ function Cadre({ classe, espace, accueil, sous, groupes, notifications, recherch
 }
 
 export function RecruteurLayout() {
+  const messages = totalNonLus(useMessagesNonLus().data);
   const groupes: Groupe[] = [
     {
       titre: 'Menu principal',
@@ -158,6 +161,7 @@ export function RecruteurLayout() {
         { to: '/recruteur/vivier', label: 'Vivier', icone: 'groupe' },
         { to: '/recruteur/profils', label: 'Profils', icone: 'grille' },
         { to: '/recruteur/agenda', label: 'Agenda', icone: 'agenda' },
+        { to: '/recruteur/messages', label: 'Messages', icone: 'bulle', compte: messages },
         { to: '/recruteur/facturation', label: 'Facturation', icone: 'facture' },
         { to: '/recruteur/statistiques', label: 'Statistiques', icone: 'stats' },
       ],
@@ -175,12 +179,14 @@ export function RecruteurLayout() {
 
 export function EntrepriseLayout() {
   const entreprise = useQuery({ queryKey: ['entreprise', 'me'], queryFn: async () => (await api.get<Entreprise>('/api/entreprises/me')).data });
+  const messages = totalNonLus(useMessagesNonLus().data);
   const groupes: Groupe[] = [
     {
       titre: 'Menu principal',
       liens: [
         { to: '/entreprise', label: 'Mes recrutements', icone: 'maison', end: true },
         { to: '/entreprise/entretiens', label: 'Entretiens', icone: 'agenda' },
+        { to: '/entreprise/messages', label: 'Messages', icone: 'bulle', compte: messages },
         { to: '/entreprise/factures', label: 'Factures', icone: 'facture' },
         { to: '/entreprise/equipe', label: 'Équipe', icone: 'groupe' },
       ],

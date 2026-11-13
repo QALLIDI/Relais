@@ -30,6 +30,7 @@ import Qualification from './pages/recruteur/Qualification';
 import ReunionsClient from './pages/entreprise/Reunions';
 import ReunionCandidat from './pages/candidat/Reunion';
 import MesDonnees from './pages/candidat/MesDonnees';
+import Messages from './pages/Messages';
 
 export default function App() {
   const auth = useAuth();
@@ -100,6 +101,7 @@ export default function App() {
           {/* Anciennes adresses (liens d'e-mails) : la fenêtre s'ouvre désormais par-dessus la page. */}
           <Route path="agenda/planifier" element={<VersFenetre page="/recruteur/agenda" fenetre="planifier" />} />
           <Route path="agenda/:id/evaluation" element={<VersFenetre page="/recruteur/agenda" fenetre="evaluation" />} />
+          <Route path="messages" element={<Messages espace="recruteur" />} />
           <Route path="notifications" element={<Notifications />} />
         </Route>
       )}
@@ -113,6 +115,7 @@ export default function App() {
           <Route path="entretiens" element={<ReunionsClient />} />
           <Route path="entretiens/planifier" element={<VersFenetre page="/entreprise/entretiens" fenetre="planifier" />} />
           <Route path="entretiens/:id/evaluation" element={<VersFenetre page="/entreprise/entretiens" fenetre="evaluation" />} />
+          <Route path="messages" element={<Messages espace="entreprise" />} />
           <Route path="notifications" element={<Notifications />} />
         </Route>
       )}

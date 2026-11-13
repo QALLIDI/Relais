@@ -31,6 +31,7 @@ public final class Events {
     public static final String PROPOSITION_ENVOYEE = "proposition.envoyee";
     public static final String PROPOSITION_ACCEPTEE = "proposition.acceptee";
     public static final String PROPOSITION_REFUSEE = "proposition.refusee";
+    public static final String MESSAGE_MISSION = "message.mission";
 
     // Réunions (agenda-service)
     public static final String REUNION_PROPOSEE = "reunion.proposee";

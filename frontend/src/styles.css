@@ -983,3 +983,49 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .st-etape .conv { text-align: right; font-size: 12.5px; color: var(--muted); }
 .st-note { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); }
 .st-barres { display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- Messagerie (fil par mission) ---------- */
+.msg-compte { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--accent-strong); color: #fff; font-size: 11px; font-weight: 600; line-height: 1; }
+.btn .msg-compte { margin-left: 2px; }
+.app-frame.replie .side-link .compte { display: none; }
+.msg-nouveau { display: flex; gap: 8px; flex-wrap: wrap; }
+.msg-nouveau select { min-height: 40px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); padding: 0 14px; font: inherit; font-size: 13.5px; color: var(--ink); max-width: 320px; }
+.msg-liste { list-style: none; margin: 0; padding: 0 8px 8px; }
+.msg-liste li + li { border-top: 1px solid var(--line); }
+.msg-liste a { display: flex; align-items: center; gap: 12px; padding: 12px 8px; border-radius: 12px; text-decoration: none; color: inherit; }
+.msg-liste a:hover { background: var(--sunken); }
+.msg-liste .mono-av { width: 38px; height: 38px; font-size: 12px; }
+.msg-liste .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.msg-liste .ligne { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.msg-liste .ligne b { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-liste time { flex: none; font-size: 12px; color: var(--muted); }
+.msg-liste .qui { font-size: 12.5px; color: var(--ink-2); }
+.msg-liste .extrait { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-liste a.non-lu .ligne b { font-weight: 600; }
+.msg-liste a.non-lu .extrait { color: var(--ink); }
+
+.ech-fil { display: flex; flex-direction: column; gap: 6px; }
+.ech-fil section { display: flex; flex-direction: column; gap: 6px; }
+.ech-jour { display: flex; align-items: center; gap: 10px; margin: 10px 0 4px; font-size: 12px; font-weight: 500; color: var(--muted); }
+.ech-jour::before, .ech-jour::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.ech-msg { display: flex; align-items: flex-end; gap: 8px; max-width: 86%; }
+.ech-msg .mono-av { margin-bottom: 2px; }
+.ech-msg.suite:not(.moi) { padding-left: 36px; }
+.ech-msg.moi { align-self: flex-end; }
+.ech-bulle { background: var(--sunken); border-radius: 16px 16px 16px 6px; padding: 9px 13px 7px; min-width: 0; }
+.ech-msg.moi .ech-bulle { background: var(--accent-soft); color: var(--accent-ink); border-radius: 16px 16px 6px 16px; }
+.ech-auteur { display: flex; gap: 4px; font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+.ech-auteur b { font-weight: 500; color: var(--ink-2); }
+.ech-msg.moi .ech-auteur b { color: inherit; }
+.ech-bulle p { margin: 0; font-size: 14px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ech-bulle time { display: block; text-align: right; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.ech-msg.moi .ech-bulle time { color: inherit; opacity: 0.7; }
+.ech-saisie { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.ech-saisie textarea { width: 100%; resize: vertical; min-height: 76px; max-height: 240px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 10px 12px; font: inherit; font-size: 14px; color: var(--ink); }
+.ech-saisie textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.ech-saisie-bas { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--muted); }
+.ech-trop { color: var(--bad); font-weight: 500; }
+@media (max-width: 700px) {
+  .ech-saisie-bas { flex-direction: column-reverse; align-items: stretch; text-align: center; }
+  .ech-msg { max-width: 92%; }
+}

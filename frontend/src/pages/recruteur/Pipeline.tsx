@@ -7,6 +7,7 @@ import type { Candidature, Etape, Mission, Pipeline, Suggestion } from '../../ap
 import { Chargement, Erreur, Icone, Modal, Pill, Score, Tags, TetePage, toneMission } from '../../components/ui';
 import { Annuler, Fenetre, versFenetre } from '../../components/Fenetre';
 import { useFilAriane } from '../../components/Layouts';
+import { useMessagesNonLus } from '../../api/messagerie';
 
 type Dialogue =
   | { type: 'sortie'; candidature: Candidature; etape: Etape }
@@ -48,6 +49,7 @@ export default function PipelinePage() {
   const id = params.id ?? ouvertes[0]?.id ?? '';
 
   const mission = useQuery({ queryKey: ['mission', id], queryFn: async () => (await api.get<Mission>(`/api/missions/${id}`)).data, enabled: !!id });
+  const nonLus = useMessagesNonLus();
   const pipeline = useQuery({ queryKey: ['pipeline', id], queryFn: async () => (await api.get<Pipeline>(`/api/pipeline/${id}`)).data, enabled: !!id });
   const suggestions = useQuery({
     queryKey: ['suggestions', id],
@@ -85,6 +87,7 @@ export default function PipelinePage() {
   const basculer = (cid: string) => setSelection((s) => (s.includes(cid) ? s.filter((x) => x !== cid) : [...s, cid]));
 
   const m = mission.data;
+  const nonLusMission = nonLus.data?.find((f) => f.missionId === m?.id)?.nonLus ?? 0;
   useFilAriane(m ? [{ label: 'Missions', to: '/recruteur/missions' }, { label: m.intitule }, { label: 'Pipeline' }] : [{ label: 'Pipeline' }]);
   const erreur = deplacer.error ?? ajouter.error ?? shortlist.error;
   const nb = (etapes: Etape[]) => toutes.filter((c) => etapes.includes(c.etape)).length;
@@ -112,6 +115,12 @@ export default function PipelinePage() {
             <Link key={x.id} to={`/recruteur/missions/${x.id}`} aria-current={x.id === id ? 'page' : undefined}>{x.intitule}</Link>
           ))}
         </nav>
+        {m && (
+          <Link to={versFenetre('echanges', { mission: m.id })} className="btn">
+            <Icone nom="bulle" taille={16} />Échanges
+            {nonLusMission > 0 && <span className="msg-compte" aria-label={`${nonLusMission} non lu(s)`}>{nonLusMission}</span>}
+          </Link>
+        )}
       </TetePage>
       {erreur && <Erreur message={messageErreur(erreur)} />}
 

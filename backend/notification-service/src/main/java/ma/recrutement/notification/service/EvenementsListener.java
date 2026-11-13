@@ -13,6 +13,7 @@ import ma.recrutement.common.events.EvenementsRecus;
 import ma.recrutement.common.events.EntretienPlanifieEvent;
 import ma.recrutement.common.events.Events;
 import ma.recrutement.common.events.FactureEmiseEvent;
+import ma.recrutement.common.events.MessageMissionEvent;
 import ma.recrutement.common.events.MissionAnnuleeEvent;
 import ma.recrutement.common.events.MissionOuverteEvent;
 import ma.recrutement.common.events.PropositionEvent;
@@ -62,6 +63,7 @@ public class EvenementsListener {
             case Events.ENTRETIEN_PLANIFIE -> recus.traiter(message, EntretienPlanifieEvent.class, this::entretien);
             case Events.CANDIDAT_PLACE -> recus.traiter(message, CandidatPlaceEvent.class, this::placement);
             case Events.FACTURE_EMISE -> recus.traiter(message, FactureEmiseEvent.class, this::facture);
+            case Events.MESSAGE_MISSION -> recus.traiter(message, MessageMissionEvent.class, this::messageMission);
             case Events.PROPOSITION_ENVOYEE, Events.PROPOSITION_ACCEPTEE, Events.PROPOSITION_REFUSEE ->
                     recus.traiter(message, PropositionEvent.class, p -> proposition(recus.type(message), p));
             default -> {
@@ -179,6 +181,29 @@ public class EvenementsListener {
 
     private static String prenom(String nom) {
         return nom == null || nom.isBlank() ? "" : nom.strip().split("\\s+")[0];
+    }
+
+    /**
+     * Nouveau message sur le fil d'une mission. Le service émetteur ne publie qu'au premier message
+     * d'une salve : cet e-mail invite à ouvrir le fil, sans recopier toute la conversation.
+     */
+    void messageMission(MessageMissionEvent e) {
+        if (e.versRecruteur()) {
+            String lien = "%s/recruteur/messages?fenetre=echanges&mission=%s".formatted(front, e.missionId());
+            notifier.notifier(recruteur, Events.MESSAGE_MISSION, "Message de %s : %s".formatted(e.entrepriseNom(), e.missionIntitule()),
+                    "%s (%s) vous a écrit au sujet de « %s » : « %s » Répondre : %s"
+                            .formatted(e.auteurNom(), e.entrepriseNom(), e.missionIntitule(), e.extrait(), lien),
+                    new Mise(e.entrepriseNom(), List.of("%s vous a écrit au sujet de « %s ».".formatted(e.auteurNom(), e.missionIntitule()),
+                            "« " + e.extrait() + " »"), List.of(), new Mise.Action("Répondre", lien),
+                            "Les messages suivants de ce fil ne déclenchent pas d'autre e-mail tant que vous ne l'avez pas ouvert."));
+        } else {
+            String lien = "%s/entreprise/messages?fenetre=echanges&mission=%s".formatted(front, e.missionId());
+            notifier.notifier(e.contactEmail(), Events.MESSAGE_MISSION, "Nouveau message de votre recruteur : " + e.missionIntitule(),
+                    "Votre recruteur vous a écrit au sujet de « %s » : « %s » Répondre : %s".formatted(e.missionIntitule(), e.extrait(), lien),
+                    new Mise(e.missionIntitule(), List.of("Votre recruteur vous a écrit au sujet de ce recrutement.", "« " + e.extrait() + " »"),
+                            List.of(), new Mise.Action("Lire et répondre", lien),
+                            "Vous pouvez aussi retrouver tous vos échanges dans la rubrique Messages de votre espace."));
+        }
     }
 
     /** Proposition commerciale : envoyée au contact du client, sa réponse au recruteur. */

@@ -144,7 +144,9 @@ public class MissionService {
         m.setCompetencesSouhaitees(new ArrayList<>(req.competencesSouhaitees() == null ? List.of() : req.competencesSouhaitees()));
     }
 
-    private Mission chargerAvecDroits(UUID id) {
+    /** Mission visible par l'utilisateur courant : toutes pour le recruteur, les siennes pour une entreprise. */
+    @Transactional(readOnly = true)
+    public Mission chargerAvecDroits(UUID id) {
         Mission m = missions.findById(id).orElseThrow(() -> new NotFoundException("Mission introuvable"));
         if (!CurrentUser.hasRole(Roles.RECRUTEUR) && !m.getEntreprise().getId().equals(CurrentUser.entrepriseId())) {
             throw new AccessDeniedException("Cette mission appartient à une autre entreprise");

@@ -401,3 +401,28 @@ export interface Notification {
   lu: boolean;
   createdAt: string;
 }
+
+/** Message du fil d'une mission (recruteur ↔ entreprise). */
+export type MessageMission = {
+  id: string;
+  auteurNom: string;
+  auteurRole: 'RECRUTEUR' | 'ENTREPRISE';
+  contenu: string;
+  creeLe: string;
+  deMoi: boolean;
+};
+
+/** Résumé d'un fil pour la page Messages. */
+export type FilMessages = {
+  missionId: string;
+  missionIntitule: string;
+  entrepriseNom: string;
+  missionStatut: string;
+  dernierAuteur: string;
+  dernierExtrait: string;
+  dernierLe: string;
+  dernierDeMoi: boolean;
+  nonLus: number;
+};
+
+export type MessagesNonLus = { missionId: string; missionIntitule: string; entrepriseNom: string; nonLus: number; dernierLe: string };

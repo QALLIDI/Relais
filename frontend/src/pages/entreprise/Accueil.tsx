@@ -3,12 +3,14 @@ import { Link } from 'react-router';
 import { useAuth } from 'react-oidc-context';
 import { api } from '../../api/client';
 import { dateFr, initiales, libelleStatutFacture, libelleStatutMission, n } from '../../api/format';
+import { useMessagesNonLus } from '../../api/messagerie';
 import { useReunions } from '../../api/reunions';
 import type { Facture, Mission, MissionResume, ProfilPresente } from '../../api/types';
 
 const jour = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' });
 const heure = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
-import { Chargement, Kpi, Pill, Progression, toneFacture, toneMission, Vide } from '../../components/ui';
+import { versFenetre } from '../../components/Fenetre';
+import { Chargement, Icone, Kpi, Pill, Progression, toneFacture, toneMission, Vide } from '../../components/ui';
 
 /** Étapes vues par le client : besoin validé, recherche, shortlist, entretiens, embauche. */
 function etapeClient(m: Mission, r?: MissionResume): number {
@@ -28,6 +30,7 @@ export default function EntrepriseAccueil() {
   const aVoir = useQuery({ queryKey: ['shortlist', 'a-evaluer'], queryFn: async () => (await api.get<ProfilPresente[]>('/api/shortlists/a-evaluer')).data });
 
   const parMission = new Map(resumes.data?.map((r) => [r.missionId, r]));
+  const nonLus = new Map((useMessagesNonLus().data ?? []).map((f) => [f.missionId, f.nonLus]));
   const actives = missions.data?.filter((m) => ['OUVERTE', 'EN_VALIDATION', 'EN_PAUSE'].includes(m.statut)) ?? [];
   const aEvaluer = resumes.data?.reduce((s, r) => s + r.aEvaluer, 0) ?? 0;
   const pourvus = resumes.data?.reduce((s, r) => s + r.places, 0) ?? 0;
@@ -99,7 +102,13 @@ export default function EntrepriseAccueil() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 4, fontSize: 11 }} className="muted">
                 <span>Besoin validé</span><span>Recherche</span><span>Shortlist</span><span>Entretiens</span><span>Embauche</span>
               </div>
-              {r && r.presentes > 0 && <Link className="btn small" to={`/entreprise/shortlist/${m.id}`} style={{ alignSelf: 'flex-start' }}>Voir les profils</Link>}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {r && r.presentes > 0 && <Link className="btn small" to={`/entreprise/shortlist/${m.id}`}>Voir les profils</Link>}
+                <Link className="btn small" to={versFenetre('echanges', { mission: m.id })}>
+                  <Icone nom="bulle" taille={14} />Écrire au recruteur
+                  {(nonLus.get(m.id) ?? 0) > 0 && <span className="msg-compte" aria-label={`${nonLus.get(m.id)} non lu(s)`}>{nonLus.get(m.id)}</span>}
+                </Link>
+              </div>
             </section>
           );
         })}

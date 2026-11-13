@@ -87,7 +87,7 @@ export function Annuler({ onClick, children = 'Annuler' }: { onClick: () => void
 
 /** Paramètres d'URL des fenêtres ouvertes par lien : ?fenetre=planifier&candidature=… */
 export const PARAMS_FENETRE = ['fenetre', 'candidature', 'reunion', 'nom', 'mission'] as const;
-export type NomFenetre = 'planifier' | 'evaluation' | 'mission';
+export type NomFenetre = 'planifier' | 'evaluation' | 'mission' | 'echanges';
 
 /** Lien relatif qui ouvre une fenêtre sur la page courante (à passer à <Link to=…>). */
 export function versFenetre(nom: NomFenetre, params: Record<string, string | undefined> = {}) {
