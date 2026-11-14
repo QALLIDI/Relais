@@ -9,6 +9,7 @@ import { FenetresGlobales } from './FenetresGlobales';
 import { useTheme } from './theme';
 import { Icone, type NomIcone } from './ui';
 import { Logo } from './Logo';
+import { gererCookies } from './Cookies';
 import { totalNonLus, useMessagesNonLus } from '../api/messagerie';
 import { useSession } from '../auth/useSession';
 
@@ -59,8 +60,21 @@ function Compte({ role }: { role: string }) {
         <button className="btn small danger" type="button" onClick={() => auth.signoutRedirect()}>
           <Icone nom="sortie" taille={16} /> Se déconnecter
         </button>
+        <LiensLegaux />
       </div>
     </details>
+  );
+}
+
+/** Liens vers les pages légales publiques (ouvertes dans un nouvel onglet) et réglage des cookies. */
+function LiensLegaux() {
+  return (
+    <nav className="liens-legaux" aria-label="Informations légales">
+      <a href="/confidentialite" target="_blank" rel="noopener">Confidentialité</a>
+      <a href="/cgu" target="_blank" rel="noopener">CGU</a>
+      <a href="/mentions-legales" target="_blank" rel="noopener">Mentions légales</a>
+      <button type="button" onClick={gererCookies}>Cookies</button>
+    </nav>
   );
 }
 
@@ -209,6 +223,7 @@ function NavigationMobile({ liens, autres, role }: { liens: Lien[]; autres: Lien
               <span className="who"><b>{nom}</b><span>{role}</span></span>
               <button className="btn small" type="button" onClick={() => auth.signoutRedirect()}><Icone nom="sortie" taille={16} />Se déconnecter</button>
             </div>
+            <LiensLegaux />
           </div>
         </div>
       )}

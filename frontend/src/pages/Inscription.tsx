@@ -225,7 +225,7 @@ function EtapeType({ type, setType, onOk, onErreur }: Props & { type: TypeCompte
       )}
       <label className="field">Adresse e-mail<input type="email" required autoComplete="email" maxLength={255} value={email} onChange={(e) => setEmail(e.target.value)} /></label>
       <button type="submit" className="btn primary bloc" disabled={envoi}>{envoi ? 'Vérification…' : 'Continuer'}</button>
-      <p className="legal">En continuant, vous acceptez les conditions d'utilisation et la politique de protection des données (loi 09-08).</p>
+      <p className="legal">En continuant, vous acceptez les <a href="/cgu" target="_blank" rel="noopener">conditions d'utilisation</a> et la <a href="/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a> (loi 09-08).</p>
     </form>
   );
 }

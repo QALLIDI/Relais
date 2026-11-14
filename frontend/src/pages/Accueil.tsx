@@ -3,6 +3,7 @@ import { useAuth } from 'react-oidc-context';
 import { useTheme } from '../components/theme';
 import { Icone } from '../components/ui';
 import { Logo } from '../components/Logo';
+import { gererCookies } from '../components/Cookies';
 import { animerAccueil } from './accueilAnimations';
 import './accueil.css';
 
@@ -250,6 +251,11 @@ export default function Accueil() {
         <div className="ligne"><span className="acc-marque petit"><b>Recrut</b></span><span className="muted">Cabinet de présélection, Casablanca</span></div>
         <nav aria-label="Liens"><a href="#etapes">Comment ça marche</a><a href="#formules">Formules</a><a href="#questions">Questions</a>
           <button type="button" onClick={connexion}>Se connecter</button></nav>
+        <nav aria-label="Informations légales" className="acc-legal">
+          <a href="/mentions-legales">Mentions légales</a><a href="/confidentialite">Confidentialité</a><a href="/cgu">CGU</a>
+          <a href="/conditions-commerciales">Conditions commerciales</a><a href="/cookies">Cookies</a>
+          <button type="button" onClick={gererCookies}>Gérer les cookies</button>
+        </nav>
       </footer>
     </div>
   );

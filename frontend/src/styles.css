@@ -1101,3 +1101,18 @@ button.notif-ligne > svg { align-self: center; color: var(--muted); flex: none; 
   .activite-mission { display: block; }
 }
 .activite-mission { display: none; }
+
+/* ---------- Bandeau cookies (bas de page, non bloquant) ---------- */
+.bandeau-cookies { position: fixed; left: 16px; bottom: 16px; z-index: 80; max-width: 460px; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 16px 40px rgba(23, 24, 28, 0.16); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; font-size: 13.5px; line-height: 1.5; }
+.bandeau-cookies p { margin: 0; color: var(--ink-2); }
+.bandeau-cookies a { color: var(--accent-ink); }
+.bandeau-cookies-boutons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 900px) {
+  .bandeau-cookies { left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); max-width: none; }
+  /* Au-dessus de la barre d'onglets dans les espaces connectés */
+  body:has(.app-frame) .bandeau-cookies { bottom: calc(84px + env(safe-area-inset-bottom)); }
+}
+
+.liens-legaux { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 6px 4px 0; font-size: 12px; }
+.liens-legaux a, .liens-legaux button { color: var(--muted); text-decoration: none; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.liens-legaux a:hover, .liens-legaux button:hover { color: var(--accent-ink); text-decoration: underline; }
