@@ -11,6 +11,7 @@ const jour = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' });
 const heure = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
 import { versFenetre } from '../../components/Fenetre';
 import { Chargement, Icone, Kpi, Pill, Progression, toneFacture, toneMission, Vide } from '../../components/ui';
+import { useSession } from '../../auth/useSession';
 
 /** Étapes vues par le client : besoin validé, recherche, shortlist, entretiens, embauche. */
 function etapeClient(m: Mission, r?: MissionResume): number {
@@ -26,7 +27,8 @@ export default function EntrepriseAccueil() {
   const resumes = useQuery({ queryKey: ['selection', 'missions'], queryFn: async () => (await api.get<MissionResume[]>('/api/selection/missions')).data });
   const reunions = useReunions();
   const entretiens = (reunions.data ?? []).filter((r) => (r.statut === 'CONFIRMEE' || r.statut === 'PROPOSEE') && (!r.fin || new Date(r.fin) >= new Date()));
-  const factures = useQuery({ queryKey: ['factures'], queryFn: async () => (await api.get<Facture[]>('/api/factures')).data });
+  const { admin } = useSession();
+  const factures = useQuery({ queryKey: ['factures'], queryFn: async () => (await api.get<Facture[]>('/api/factures')).data, enabled: admin });
   const aVoir = useQuery({ queryKey: ['shortlist', 'a-evaluer'], queryFn: async () => (await api.get<ProfilPresente[]>('/api/shortlists/a-evaluer')).data });
 
   const parMission = new Map(resumes.data?.map((r) => [r.missionId, r]));
@@ -54,7 +56,9 @@ export default function EntrepriseAccueil() {
       {actives.length === 0 && !missions.isLoading && (
         <section className="card stack">
           <Vide>Aucune mission en cours. Exprimez un besoin pour lancer un recrutement.</Vide>
-          <Link className="btn accent" to="/entreprise/besoin" style={{ alignSelf: 'flex-start' }}>Exprimer un besoin</Link>
+          {admin
+            ? <Link className="btn accent" to="/entreprise/besoin" style={{ alignSelf: 'flex-start' }}>Exprimer un besoin</Link>
+            : <p className="muted small" style={{ margin: 0 }}>Un administrateur de votre entreprise peut exprimer un nouveau besoin.</p>}
         </section>
       )}
       <div className="grid-2">
@@ -138,7 +142,7 @@ export default function EntrepriseAccueil() {
             );
           })}
         </section>
-        <section className="card">
+        {admin && <section className="card">
           <div className="card-head">
             <h2>Factures</h2>
             <Link to="/entreprise/factures" className="btn small">Tout voir</Link>
@@ -151,7 +155,7 @@ export default function EntrepriseAccueil() {
               <Pill tone={toneFacture(f.statut)}>{libelleStatutFacture[f.statut]}</Pill>
             </div>
           ))}
-        </section>
+        </section>}
       </div>
     </div>
   );

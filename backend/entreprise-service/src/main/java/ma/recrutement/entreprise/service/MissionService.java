@@ -69,6 +69,7 @@ public class MissionService {
             m.setEntreprise(entreprise(req.entrepriseId()));
             m.setStatut(req.statut() == null ? StatutMission.OUVERTE : req.statut());
         } else {
+            exigerAdministrateur();
             m.setEntreprise(entreprise(CurrentUser.entrepriseId()));
             m.setStatut(StatutMission.EN_VALIDATION);
         }
@@ -80,6 +81,7 @@ public class MissionService {
 
     public MissionDto modifier(UUID id, MissionRequest req) {
         Mission m = chargerAvecDroits(id);
+        exigerAdministrateur();
         if (!CurrentUser.hasRole(Roles.RECRUTEUR) && m.getStatut() != StatutMission.EN_VALIDATION) {
             throw new AccessDeniedException("Ce besoin a déjà été validé ; contactez votre recruteur");
         }
@@ -142,6 +144,13 @@ public class MissionService {
         }
         m.setCompetencesRequises(new ArrayList<>(req.competencesRequises() == null ? List.of() : req.competencesRequises()));
         m.setCompetencesSouhaitees(new ArrayList<>(req.competencesSouhaitees() == null ? List.of() : req.competencesSouhaitees()));
+    }
+
+    /** Côté client, publier ou modifier un besoin engage l'entreprise : réservé à ses administrateurs. */
+    private static void exigerAdministrateur() {
+        if (!CurrentUser.hasRole(Roles.RECRUTEUR) && !CurrentUser.hasRole(Roles.ENTREPRISE_ADMIN)) {
+            throw new AccessDeniedException("Réservé aux administrateurs de votre entreprise");
+        }
     }
 
     /** Mission visible par l'utilisateur courant : toutes pour le recruteur, les siennes pour une entreprise. */

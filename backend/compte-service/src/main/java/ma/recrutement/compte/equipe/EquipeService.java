@@ -4,6 +4,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import ma.recrutement.compte.inscription.ComptesKeycloak;
 import org.keycloak.admin.client.CreatedResponseUtil;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,10 @@ import org.springframework.stereotype.Service;
  * Équipe d'une entreprise : les comptes Keycloak qui portent le même attribut {@code entrepriseId}.
  * Un membre invité reçoit l'e-mail natif de Keycloak (« actions requises ») pour choisir son mot
  * de passe et confirmer son adresse ; il est rattaché d'emblée, sans validation du cabinet.
+ * <p>
+ * Deux rôles : membre (rôle ENTREPRISE) et administrateur (ENTREPRISE + ENTREPRISE_ADMIN). Seuls les
+ * administrateurs gèrent l'équipe ; une entreprise garde toujours au moins un administrateur.
+ * Un changement de rôle prend effet au prochain renouvellement du jeton de l'intéressé.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,23 +45,25 @@ public class EquipeService {
     private final CompteProperties props;
     private final ComptesKeycloak comptes;
 
-    public record Membre(String id, String prenom, String nom, String email, String fonction, boolean actif, boolean moi) {
+    public record Membre(String id, String prenom, String nom, String email, String fonction, boolean actif, boolean moi, boolean admin) {
     }
 
-    public record Invitation(String email, String prenom, String nom, String fonction) {
+    public record Invitation(String email, String prenom, String nom, String fonction, boolean admin) {
     }
 
     public List<Membre> membres() {
         String entreprise = monEntreprise();
-        return realm.users().searchByAttributes(0, 200, null, false, true, "entrepriseId:" + entreprise).stream()
-                .filter(u -> entreprise.equals(ComptesKeycloak.attribut(u, "entrepriseId")))
-                .map(this::membre)
-                .sorted(Comparator.comparing(Membre::moi).reversed().thenComparing(m -> m.email() == null ? "" : m.email()))
+        Set<String> admins = idsAdministrateurs();
+        return comptesDe(entreprise).stream()
+                .map(u -> membre(u, admins))
+                .sorted(Comparator.comparing(Membre::moi).reversed()
+                        .thenComparing(Comparator.comparing(Membre::admin).reversed())
+                        .thenComparing(m -> m.email() == null ? "" : m.email()))
                 .toList();
     }
 
     public Membre inviter(Invitation i) {
-        String entreprise = monEntreprise();
+        String entreprise = monEntrepriseEnAdmin();
         String email = i.email().strip().toLowerCase();
         if (comptes.parEmail(email).isPresent()) {
             throw new BusinessException("Un compte existe déjà avec cette adresse e-mail.");
@@ -83,19 +92,85 @@ public class EquipeService {
         }
         try {
             UserResource user = realm.users().get(id);
-            user.roles().realmLevel().add(List.of(realm.roles().get(Roles.ENTREPRISE).toRepresentation()));
+            List<RoleRepresentation> roles = new java.util.ArrayList<>(List.of(role(Roles.ENTREPRISE)));
+            if (i.admin()) {
+                roles.add(role(Roles.ENTREPRISE_ADMIN));
+            }
+            user.roles().realmLevel().add(roles);
             user.executeActionsEmail(props.keycloak().clientFront(), props.frontUrl() + "/entreprise", DUREE_LIEN,
                     List.of("UPDATE_PASSWORD", "VERIFY_EMAIL"));
         } catch (RuntimeException e) {
             comptes.supprimer(id);
             throw e;
         }
-        log.info("Invitation de {} dans l'entreprise {}", email, entreprise);
-        return membre(realm.users().get(id).toRepresentation());
+        log.info("Invitation de {} dans l'entreprise {}{}", email, entreprise, i.admin() ? " (administrateur)" : "");
+        return membre(realm.users().get(id).toRepresentation(), idsAdministrateurs());
+    }
+
+    /** Nomme ou retire un administrateur. Le dernier administrateur de l'entreprise ne peut pas être rétrogradé. */
+    public Membre changerRole(String userId, boolean admin) {
+        String entreprise = monEntrepriseEnAdmin();
+        UserRepresentation u = deMonEntreprise(userId);
+        Set<String> admins = idsAdministrateurs();
+        boolean estAdmin = admins.contains(userId);
+        if (estAdmin == admin) {
+            return membre(u, admins);
+        }
+        UserResource user = realm.users().get(userId);
+        if (admin) {
+            user.roles().realmLevel().add(List.of(role(Roles.ENTREPRISE_ADMIN)));
+            admins.add(userId);
+        } else {
+            if (administrateursDe(entreprise, admins) <= 1) {
+                throw new BusinessException("Votre entreprise doit garder au moins un administrateur. Nommez-en un autre avant.");
+            }
+            user.roles().realmLevel().remove(List.of(role(Roles.ENTREPRISE_ADMIN)));
+            admins.remove(userId);
+        }
+        log.info("Rôle de {} dans l'entreprise {} : {}", userId, entreprise, admin ? "administrateur" : "membre");
+        return membre(u, admins);
+    }
+
+    /**
+     * Donne le rôle d'administrateur à ce compte si son entreprise n'en a encore aucun
+     * (premier compte rattaché, ou entreprise créée avant l'arrivée des rôles).
+     *
+     * @return vrai si le compte a été nommé administrateur
+     */
+    public boolean nommerSiAucunAdministrateur(String userId, String entreprise) {
+        if (administrateursDe(entreprise, idsAdministrateurs()) > 0) {
+            return false;
+        }
+        realm.users().get(userId).roles().realmLevel().add(List.of(role(Roles.ENTREPRISE_ADMIN)));
+        log.info("Compte {} nommé administrateur de l'entreprise {} (aucun administrateur)", userId, entreprise);
+        return true;
+    }
+
+    /** Comptes rattachés à une entreprise. */
+    public List<UserRepresentation> comptesDe(String entreprise) {
+        return realm.users().searchByAttributes(0, 200, null, false, true, "entrepriseId:" + entreprise).stream()
+                .filter(u -> entreprise.equals(ComptesKeycloak.attribut(u, "entrepriseId")))
+                .toList();
+    }
+
+    /** Identifiants de tous les comptes qui ont le rôle ENTREPRISE_ADMIN, toutes entreprises confondues. */
+    public Set<String> idsAdministrateurs() {
+        return realm.roles().get(Roles.ENTREPRISE_ADMIN).getUserMembers(0, 5000).stream()
+                .map(UserRepresentation::getId)
+                .collect(Collectors.toCollection(java.util.HashSet::new));
+    }
+
+    private long administrateursDe(String entreprise, Set<String> admins) {
+        return comptesDe(entreprise).stream().filter(u -> admins.contains(u.getId())).count();
+    }
+
+    private RoleRepresentation role(String nom) {
+        return realm.roles().get(nom).toRepresentation();
     }
 
     /** Renvoie l'e-mail d'invitation à un membre qui ne l'a pas encore utilisé. */
     public void relancer(String userId) {
+        monEntrepriseEnAdmin();
         UserRepresentation u = deMonEntreprise(userId);
         if (Boolean.TRUE.equals(u.isEmailVerified())) {
             throw new BusinessException("Ce membre a déjà activé son compte.");
@@ -106,10 +181,15 @@ public class EquipeService {
 
     /** Retire un membre de l'équipe : son compte de connexion est supprimé. */
     public void retirer(String userId) {
+        String entreprise = monEntrepriseEnAdmin();
         if (userId.equals(CurrentUser.id())) {
             throw new BusinessException("Vous ne pouvez pas vous retirer vous-même.");
         }
         deMonEntreprise(userId);
+        Set<String> admins = idsAdministrateurs();
+        if (admins.contains(userId) && administrateursDe(entreprise, admins) <= 1) {
+            throw new BusinessException("Votre entreprise doit garder au moins un administrateur.");
+        }
         comptes.supprimer(userId);
     }
 
@@ -121,9 +201,18 @@ public class EquipeService {
         return u;
     }
 
-    private Membre membre(UserRepresentation u) {
+    private Membre membre(UserRepresentation u, Set<String> admins) {
         return new Membre(u.getId(), u.getFirstName(), u.getLastName(), u.getEmail(), ComptesKeycloak.attribut(u, "fonction"),
-                Boolean.TRUE.equals(u.isEmailVerified()), u.getId().equals(CurrentUser.id()));
+                Boolean.TRUE.equals(u.isEmailVerified()), u.getId().equals(CurrentUser.id()), admins.contains(u.getId()));
+    }
+
+    /** Entreprise de l'utilisateur, qui doit en être administrateur. */
+    private static String monEntrepriseEnAdmin() {
+        String id = monEntreprise();
+        if (!CurrentUser.hasRole(Roles.ENTREPRISE_ADMIN)) {
+            throw new AccessDeniedException("Réservé aux administrateurs de votre entreprise");
+        }
+        return id;
     }
 
     private static String monEntreprise() {

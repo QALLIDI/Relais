@@ -14,6 +14,11 @@ $KC config credentials --server http://localhost:8080 --realm master \
 $KC update realms/$R -s registrationAllowed=false -s verifyEmail=true -s emailTheme=recrut \
   -s 'passwordPolicy=length(8) and specialChars(1) and regexPattern(.*[A-Z0-9].*)'
 
+# Administrateur d'une entreprise (cumulé avec ENTREPRISE) : équipe, besoins, propositions, factures.
+# compte-service nomme ensuite au démarrage un administrateur dans chaque entreprise qui n'en a pas.
+$KC get roles/ENTREPRISE_ADMIN -r $R >/dev/null 2>&1 || $KC create roles -r $R -s name=ENTREPRISE_ADMIN \
+  -s "description=Administrateur d'une entreprise : équipe, nouveaux besoins, propositions commerciales, factures"
+
 # Le rôle vient de compte-service (CANDIDAT ou ENTREPRISE), plus du rôle par défaut.
 $KC remove-roles -r $R --rname default-roles-$R --rolename CANDIDAT 2>/dev/null || true
 

@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 public class RattachementController {
 
     private final RealmResource realm;
+    private final EquipeService equipe;
 
     public record RattachementRequest(@NotNull UUID entrepriseId) {
     }
@@ -58,6 +59,8 @@ public class RattachementController {
         if (!aLeRole) {
             user.roles().realmLevel().add(List.of(realm.roles().get(Roles.ENTREPRISE).toRepresentation()));
         }
-        log.info("Compte {} rattaché à l'entreprise {}", userId, req.entrepriseId());
+        // Le premier compte rattaché à une entreprise en devient l'administrateur.
+        boolean admin = equipe.nommerSiAucunAdministrateur(userId, req.entrepriseId().toString());
+        log.info("Compte {} rattaché à l'entreprise {}{}", userId, req.entrepriseId(), admin ? " comme administrateur" : "");
     }
 }

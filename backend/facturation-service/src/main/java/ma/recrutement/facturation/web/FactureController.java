@@ -28,7 +28,7 @@ public class FactureController {
     private final FacturePdf pdf;
 
     @GetMapping("/api/factures")
-    @PreAuthorize("hasAnyRole('RECRUTEUR','ENTREPRISE')")
+    @PreAuthorize("hasAnyRole('RECRUTEUR','ENTREPRISE_ADMIN')")
     public List<FactureDto> lister() {
         return service.lister();
     }
@@ -53,7 +53,7 @@ public class FactureController {
     }
 
     @GetMapping("/api/factures/{id}/pdf")
-    @PreAuthorize("hasAnyRole('RECRUTEUR','ENTREPRISE')")
+    @PreAuthorize("hasAnyRole('RECRUTEUR','ENTREPRISE_ADMIN')")
     public ResponseEntity<byte[]> pdf(@PathVariable UUID id) {
         Facture f = service.pourPdf(id);
         String nom = (f.getNumero() == null ? "facture-brouillon" : f.getNumero()) + ".pdf";

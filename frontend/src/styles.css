@@ -1029,3 +1029,19 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .ech-saisie-bas { flex-direction: column-reverse; align-items: stretch; text-align: center; }
   .ech-msg { max-width: 92%; }
 }
+
+/* ---------- Équipe : rôles ---------- */
+.eq-role { flex: none; font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 999px; background: var(--sunken); color: var(--ink-2); white-space: nowrap; }
+.eq-role.admin { background: var(--accent-soft); color: var(--accent-ink); }
+.eq-droits { display: flex; flex-direction: column; gap: 12px; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
+.eq-droits div { display: flex; flex-direction: column; gap: 2px; }
+.eq-droits b { color: var(--ink); font-weight: 500; }
+.eq-droits p { margin: 0; font-size: 12.5px; color: var(--muted); }
+.eq-choix { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.eq-choix legend { font-size: 13px; color: var(--ink-2); margin-bottom: 6px; padding: 0; }
+.eq-choix label { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 14px; cursor: pointer; }
+.eq-choix label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.eq-choix input { margin-top: 3px; accent-color: var(--accent-strong); }
+.eq-choix span { display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; }
+.eq-choix b { font-weight: 500; }
+.eq-choix small { font-size: 12.5px; color: var(--muted); }

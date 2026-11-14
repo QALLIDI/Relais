@@ -20,6 +20,8 @@ export type Role = 'RECRUTEUR' | 'ENTREPRISE' | 'CANDIDAT';
 export interface Session {
   roles: Role[];
   role: Role | null;
+  /** Administrateur de son entreprise (rôle ENTREPRISE_ADMIN) : équipe, besoins, propositions, factures. */
+  admin: boolean;
   entrepriseId?: string;
   email?: string;
   nom?: string;
@@ -39,9 +41,10 @@ export function lireSession(accessToken: string): Session {
         : roles.includes('CANDIDAT')
           ? 'CANDIDAT'
           : null;
-    return { roles, role, entrepriseId: payload.entrepriseId, email: payload.email, nom: payload.name };
+    const admin = (payload.realm_access?.roles ?? []).includes('ENTREPRISE_ADMIN');
+    return { roles, role, admin, entrepriseId: payload.entrepriseId, email: payload.email, nom: payload.name };
   } catch {
-    return { roles: [], role: null };
+    return { roles: [], role: null, admin: false };
   }
 }
 

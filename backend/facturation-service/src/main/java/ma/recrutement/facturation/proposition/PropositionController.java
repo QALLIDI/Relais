@@ -32,7 +32,7 @@ public class PropositionController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('RECRUTEUR','ENTREPRISE')")
+    @PreAuthorize("hasAnyRole('RECRUTEUR','ENTREPRISE_ADMIN')")
     public List<PropositionDto> lister() {
         return service.lister();
     }
@@ -46,13 +46,13 @@ public class PropositionController {
     }
 
     @PostMapping("/{id}/acceptation")
-    @PreAuthorize("hasRole('ENTREPRISE')")
+    @PreAuthorize("hasRole('ENTREPRISE_ADMIN')")
     public PropositionDto accepter(@PathVariable UUID id) {
         return service.accepter(id);
     }
 
     @PostMapping("/{id}/refus")
-    @PreAuthorize("hasRole('ENTREPRISE')")
+    @PreAuthorize("hasRole('ENTREPRISE_ADMIN')")
     public PropositionDto refuser(@PathVariable UUID id, @Valid @RequestBody RefusRequest r) {
         return service.refuser(id, r.motif());
     }

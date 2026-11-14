@@ -32,7 +32,11 @@
       },
       {
         "name": "ENTREPRISE",
-        "description": "Espace entreprise : besoins, shortlists, factures"
+        "description": "Espace entreprise : suivi des recrutements, shortlists, entretiens, messages"
+      },
+      {
+        "name": "ENTREPRISE_ADMIN",
+        "description": "Administrateur d'une entreprise : équipe, nouveaux besoins, propositions commerciales, factures"
       },
       {
         "name": "CANDIDAT",
@@ -166,7 +170,8 @@
       "emailVerified": true,
       "realmRoles": [
         "default-roles-recrutement",
-        "ENTREPRISE"
+        "ENTREPRISE",
+        "ENTREPRISE_ADMIN"
       ],
       "attributes": {
         "entrepriseId": [

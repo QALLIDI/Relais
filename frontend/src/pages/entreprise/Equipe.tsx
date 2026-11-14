@@ -3,6 +3,7 @@ import { type FormEvent, useState } from 'react';
 import { api, messageErreur } from '../../api/client';
 import { initiales } from '../../api/format';
 import type { Entreprise } from '../../api/types';
+import { useSession } from '../../auth/useSession';
 import { Annuler, Fenetre } from '../../components/Fenetre';
 import { Chargement, Erreur, Icone, TetePage, Vide } from '../../components/ui';
 
@@ -14,6 +15,8 @@ export interface Membre {
   fonction?: string;
   actif: boolean;
   moi: boolean;
+  /** Administrateur : gère l'équipe, exprime les besoins, accepte les propositions, voit les factures. */
+  admin: boolean;
 }
 
 const nomComplet = (m: Membre) => [m.prenom, m.nom].filter(Boolean).join(' ') || m.email || 'Membre';
@@ -21,6 +24,7 @@ const nomComplet = (m: Membre) => [m.prenom, m.nom].filter(Boolean).join(' ') ||
 /** Équipe de l'entreprise : les collègues qui suivent les recrutements (maquette « Équipe »). */
 export default function Equipe() {
   const qc = useQueryClient();
+  const { admin: jeSuisAdmin } = useSession();
   const [inviter, setInviter] = useState<string | null>(null);
   const [aRetirer, setARetirer] = useState<Membre | null>(null);
   const [message, setMessage] = useState('');
@@ -36,17 +40,29 @@ export default function Equipe() {
     mutationFn: (m: Membre) => api.delete(`/api/comptes/equipe/${m.id}`),
     onSuccess: (_, m) => { setARetirer(null); setMessage(`${nomComplet(m)} n'a plus accès à l'espace.`); void rafraichir(); },
   });
+  const changerRole = useMutation({
+    mutationFn: ({ m, admin }: { m: Membre; admin: boolean }) => api.put<Membre>(`/api/comptes/equipe/${m.id}/role`, { admin }),
+    onSuccess: (_, { m, admin }) => {
+      setMessage(`${nomComplet(m)} est maintenant ${admin ? 'administrateur' : 'membre'}. Le changement s'applique à sa prochaine connexion.`);
+      void rafraichir();
+    },
+  });
   const [saisie, setSaisie] = useState('');
   const ouvrir = (e: FormEvent) => { e.preventDefault(); setInviter(saisie.trim()); };
   const liste = membres.data ?? [];
+  const nbAdmins = liste.filter((m) => m.admin).length;
+  const erreur = relancer.error ?? retirer.error ?? changerRole.error;
 
   return (
     <>
-      <TetePage titre="Votre équipe" sous={`${entreprise.data?.raisonSociale ?? 'Votre entreprise'} · ${liste.length} membre(s). Vos collègues suivent les shortlists, les entretiens et les factures.`}>
-        <button type="button" className="btn primary" onClick={() => setInviter('')}><Icone nom="plus" taille={16} />Inviter un membre</button>
+      <TetePage titre="Votre équipe" sous={`${entreprise.data?.raisonSociale ?? 'Votre entreprise'} · ${liste.length} membre(s), dont ${nbAdmins} administrateur(s).`}>
+        {jeSuisAdmin && <button type="button" className="btn primary" onClick={() => setInviter('')}><Icone nom="plus" taille={16} />Inviter un membre</button>}
       </TetePage>
       {message && <div className="alert info" role="status">{message}</div>}
-      {(relancer.error || retirer.error) && <Erreur message={messageErreur(relancer.error ?? retirer.error)} />}
+      {erreur && <Erreur message={messageErreur(erreur)} />}
+      {!jeSuisAdmin && liste.length > 0 && (
+        <div className="alert info" role="note">Seuls les administrateurs peuvent inviter ou retirer des membres et changer les rôles.</div>
+      )}
 
       <div className="tableau-bord">
         <section className="bloc" aria-labelledby="membres">
@@ -62,33 +78,46 @@ export default function Equipe() {
                   <b>{nomComplet(m)}{m.moi && <span className="muted"> · vous</span>}</b>
                   <span>{[m.email, m.fonction].filter(Boolean).join(' · ')}</span>
                 </span>
+                <span className={`eq-role ${m.admin ? 'admin' : ''}`}>{m.admin ? 'Administrateur' : 'Membre'}</span>
                 {m.actif ? <span className="oui-non oui">Actif</span> : <span className="etat-carte attente">Invitation envoyée</span>}
-                {!m.moi && (
+                {jeSuisAdmin && !m.moi && (
                   <details className="carte-menu">
                     <summary aria-label={`Actions pour ${nomComplet(m)}`}>⋯</summary>
                     <div className="menu" onClick={(e) => (e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open')}>
                       {!m.actif && <button type="button" disabled={relancer.isPending} onClick={() => relancer.mutate(m)}>Renvoyer l'invitation</button>}
+                      {m.admin
+                        ? <button type="button" disabled={changerRole.isPending || nbAdmins <= 1} title={nbAdmins <= 1 ? 'Votre entreprise doit garder au moins un administrateur' : undefined}
+                            onClick={() => changerRole.mutate({ m, admin: false })}>Retirer le rôle administrateur</button>
+                        : <button type="button" disabled={changerRole.isPending} onClick={() => changerRole.mutate({ m, admin: true })}>Nommer administrateur</button>}
                       <button type="button" className="danger" onClick={() => setARetirer(m)}>Retirer de l'équipe</button>
                     </div>
                   </details>
                 )}
               </div>
             ))}
-            <form className="invitation-rapide" onSubmit={ouvrir}>
-              <label className="sr-only" htmlFor="email-rapide">E-mail du collègue à inviter</label>
-              <input id="email-rapide" type="email" placeholder="E-mail du collègue à inviter" value={saisie} onChange={(e) => setSaisie(e.target.value)} />
-              <button type="submit" className="btn primary">Inviter</button>
-            </form>
+            {jeSuisAdmin && (
+              <form className="invitation-rapide" onSubmit={ouvrir}>
+                <label className="sr-only" htmlFor="email-rapide">E-mail du collègue à inviter</label>
+                <input id="email-rapide" type="email" placeholder="E-mail du collègue à inviter" value={saisie} onChange={(e) => setSaisie(e.target.value)} />
+                <button type="submit" className="btn primary">Inviter</button>
+              </form>
+            )}
           </div>
         </section>
 
         <div className="colonne-droite">
           <section className="bloc reperes" aria-labelledby="comment">
-            <div className="bloc-tete"><h2 id="comment">Comment ça marche</h2></div>
-            <div className="bloc-corps stack" style={{ gap: 8, fontSize: 13.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>
-              <span>1. Votre collègue reçoit un e-mail pour choisir son mot de passe (lien valable 7 jours).</span>
-              <span>2. Il voit les mêmes recrutements que vous : shortlists, entretiens, factures.</span>
-              <span>3. Il peut donner son avis sur les profils et évaluer les entretiens.</span>
+            <div className="bloc-tete"><h2 id="comment">Qui peut faire quoi</h2></div>
+            <div className="bloc-corps eq-droits">
+              <div>
+                <b>Membre</b>
+                <span>Suit les recrutements, donne son avis sur les profils, participe aux entretiens et écrit au recruteur.</span>
+              </div>
+              <div>
+                <b>Administrateur</b>
+                <span>En plus : exprime les nouveaux besoins, accepte les propositions commerciales, voit les factures et gère l'équipe.</span>
+              </div>
+              <p>Un collègue invité reçoit un e-mail pour choisir son mot de passe (lien valable 7 jours). Votre entreprise garde toujours au moins un administrateur.</p>
             </div>
           </section>
         </div>
@@ -114,9 +143,10 @@ function ModaleInvitation({ emailInitial, entreprise, onFermer, onFait }: {
   emailInitial: string; entreprise?: string; onFermer: () => void; onFait: (m: Membre) => void;
 }) {
   const [f, setF] = useState({ prenom: '', nom: '', email: emailInitial, fonction: '' });
+  const [admin, setAdmin] = useState(false);
   const maj = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   const envoyer = useMutation({
-    mutationFn: async () => (await api.post<Membre>('/api/comptes/equipe', { ...f, email: f.email.trim() })).data,
+    mutationFn: async () => (await api.post<Membre>('/api/comptes/equipe', { ...f, email: f.email.trim(), admin })).data,
     onSuccess: onFait,
   });
   const valide = /^\S+@\S+\.\S+$/.test(f.email.trim());
@@ -130,6 +160,17 @@ function ModaleInvitation({ emailInitial, entreprise, onFermer, onFait }: {
       </div>
       <label className="field">E-mail professionnel<input type="email" required value={f.email} onChange={maj('email')} placeholder="prenom.nom@entreprise.ma" autoComplete="off" /></label>
       <label className="field">Fonction (facultatif)<input value={f.fonction} onChange={maj('fonction')} placeholder="Ex. : responsable RH, manager de l'équipe" /></label>
+      <fieldset className="eq-choix">
+        <legend>Rôle</legend>
+        <label>
+          <input type="radio" name="role" checked={!admin} onChange={() => setAdmin(false)} />
+          <span><b>Membre</b><small>Suit les recrutements, évalue les profils et les entretiens.</small></span>
+        </label>
+        <label>
+          <input type="radio" name="role" checked={admin} onChange={() => setAdmin(true)} />
+          <span><b>Administrateur</b><small>Peut aussi exprimer des besoins, accepter les propositions, voir les factures et gérer l'équipe.</small></span>
+        </label>
+      </fieldset>
       {envoyer.error && <Erreur message={messageErreur(envoyer.error)} />}
     </Fenetre>
   );

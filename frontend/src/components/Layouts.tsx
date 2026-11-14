@@ -10,6 +10,7 @@ import { useTheme } from './theme';
 import { Icone, type NomIcone } from './ui';
 import { Logo } from './Logo';
 import { totalNonLus, useMessagesNonLus } from '../api/messagerie';
+import { useSession } from '../auth/useSession';
 
 type Lien = { to: string; label: string; icone: NomIcone; end?: boolean; compte?: number };
 type Groupe = { titre: string; liens: Lien[] };
@@ -180,6 +181,7 @@ export function RecruteurLayout() {
 export function EntrepriseLayout() {
   const entreprise = useQuery({ queryKey: ['entreprise', 'me'], queryFn: async () => (await api.get<Entreprise>('/api/entreprises/me')).data });
   const messages = totalNonLus(useMessagesNonLus().data);
+  const { admin } = useSession();
   const groupes: Groupe[] = [
     {
       titre: 'Menu principal',
@@ -187,14 +189,15 @@ export function EntrepriseLayout() {
         { to: '/entreprise', label: 'Mes recrutements', icone: 'maison', end: true },
         { to: '/entreprise/entretiens', label: 'Entretiens', icone: 'agenda' },
         { to: '/entreprise/messages', label: 'Messages', icone: 'bulle', compte: messages },
-        { to: '/entreprise/factures', label: 'Factures', icone: 'facture' },
+        // Factures et propositions : réservées aux administrateurs de l'entreprise.
+        ...(admin ? [{ to: '/entreprise/factures', label: 'Factures', icone: 'facture' as const }] : []),
         { to: '/entreprise/equipe', label: 'Équipe', icone: 'groupe' },
       ],
     },
-    { titre: 'Actions', liens: [{ to: '/entreprise/besoin', label: 'Nouveau besoin', icone: 'plus' }] },
+    ...(admin ? [{ titre: 'Actions', liens: [{ to: '/entreprise/besoin', label: 'Nouveau besoin', icone: 'plus' as const }] }] : []),
   ];
   return (
-    <Cadre classe="layout-entreprise" espace="entreprise" accueil="/entreprise" sous={entreprise.data?.raisonSociale} groupes={groupes} notifications="/entreprise/notifications" role="Entreprise">
+    <Cadre classe="layout-entreprise" espace="entreprise" accueil="/entreprise" sous={entreprise.data?.raisonSociale} groupes={groupes} notifications="/entreprise/notifications" role={admin ? 'Administrateur' : 'Membre'}>
       <main className="app-main">
         <Outlet />
       </main>

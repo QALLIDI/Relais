@@ -31,6 +31,7 @@ import ReunionsClient from './pages/entreprise/Reunions';
 import ReunionCandidat from './pages/candidat/Reunion';
 import MesDonnees from './pages/candidat/MesDonnees';
 import Messages from './pages/Messages';
+import ReserveAdmin from './pages/entreprise/ReserveAdmin';
 
 export default function App() {
   const auth = useAuth();
@@ -108,9 +109,9 @@ export default function App() {
       {session.roles.includes('ENTREPRISE') && (
         <Route path="/entreprise" element={<EntrepriseLayout />}>
           <Route index element={<EntrepriseAccueil />} />
-          <Route path="besoin" element={<NouveauBesoin />} />
+          <Route path="besoin" element={session.admin ? <NouveauBesoin /> : <ReserveAdmin action="exprimer un nouveau besoin" />} />
           <Route path="shortlist/:missionId" element={<Shortlist />} />
-          <Route path="factures" element={<FacturesClient />} />
+          <Route path="factures" element={session.admin ? <FacturesClient /> : <ReserveAdmin action="consulter les factures et les propositions commerciales" />} />
           <Route path="equipe" element={<Equipe />} />
           <Route path="entretiens" element={<ReunionsClient />} />
           <Route path="entretiens/planifier" element={<VersFenetre page="/entreprise/entretiens" fenetre="planifier" />} />
