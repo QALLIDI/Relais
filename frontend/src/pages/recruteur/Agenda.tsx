@@ -114,12 +114,20 @@ export default function Agenda() {
                     const h = b.debut.getHours() + b.debut.getMinutes() / 60;
                     const duree = (b.fin.getTime() - b.debut.getTime()) / 3_600_000;
                     const nom = b.reunion.nature === 'ENTRETIEN_CLIENT' ? b.reunion.candidatNom ?? b.reunion.entrepriseNom : b.reunion.candidatNom;
+                    const detail = b.option ?? (b.reunion.nature === 'ENTRETIEN_CLIENT' ? `Entretien · ${b.reunion.entrepriseNom}` : b.reunion.natureLibelle);
+                    const plage = `${fmtHeure(b.debut.toISOString())} – ${fmtHeure(b.fin.toISOString())}`;
+                    // Créneau court (< 45 min) : une seule ligne « Nom · 09:00 », le détail passe en info-bulle.
+                    const court = duree < 0.75;
                     return (
-                      <button key={`${b.reunion.id}-${k}`} type="button" className={`evt-epure ${classeBloc(b)}`} aria-pressed={sel?.id === b.reunion.id}
-                        onClick={() => ouvrir(b.reunion.id)} style={{ top: Math.max(0, (h - HEURE_DEBUT) * PX_HEURE + 3), height: Math.max(40, duree * PX_HEURE - 6) }}>
+                      <button key={`${b.reunion.id}-${k}`} type="button" className={`evt-epure ${classeBloc(b)}${court ? ' court' : ''}`} aria-pressed={sel?.id === b.reunion.id}
+                        title={`${nom ?? ''} · ${detail ?? ''} · ${plage}`}
+                        onClick={() => ouvrir(b.reunion.id)}
+                        style={{ top: Math.max(0, (h - HEURE_DEBUT) * PX_HEURE + 2), height: court ? Math.max(26, duree * PX_HEURE - 4) : Math.max(40, duree * PX_HEURE - 6) }}>
                         <b>{nom}</b>
-                        <span>{b.option ?? (b.reunion.nature === 'ENTRETIEN_CLIENT' ? `Entretien · ${b.reunion.entrepriseNom}` : b.reunion.natureLibelle)}</span>
-                        <span>{fmtHeure(b.debut.toISOString())} – {fmtHeure(b.fin.toISOString())}</span>
+                        {court ? <span className="heure">{fmtHeure(b.debut.toISOString())}</span> : <>
+                          <span>{detail}</span>
+                          <span>{plage}</span>
+                        </>}
                         {b.reunion.statut === 'CONFIRMEE' && duree >= 1.2 && <span className="confirme">✓ Confirmé</span>}
                       </button>
                     );
