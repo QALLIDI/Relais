@@ -1,16 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { useAuth } from 'react-oidc-context';
 import { api, messageErreur, telecharger } from '../../api/client';
 import type { Candidat, CandidatRequest } from '../../api/types';
 import { CandidatForm } from '../../components/CandidatForm';
-import { Chargement, Erreur } from '../../components/ui';
+import { Chargement, Erreur, TetePage } from '../../components/ui';
 
 export default function MonProfil() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
   const auth = useAuth();
   const [enregistre, setEnregistre] = useState(false);
   const profil = useQuery({
@@ -40,10 +39,8 @@ export default function MonProfil() {
 
   return (
     <div className="page" style={{ maxWidth: 960 }}>
-      <header className="header">
-        <h1 style={{ fontSize: 34 }}>{c ? 'Mon profil et mon CV' : 'Créer mon profil'}</h1>
-        {c && <button className="btn" onClick={() => navigate('/candidat')}>Retour à l'accueil</button>}
-      </header>
+      <TetePage titre={c ? 'Mon profil et mon CV' : 'Créer mon profil'}
+        sous={c ? 'Un profil complet et à jour vous fait proposer les bons postes.' : 'Quelques minutes suffisent ; votre recruteur s’occupe du reste.'} />
       {enregistre && <div className="alert info">Profil enregistré.</div>}
       {(enregistrer.error || deposerCv.error) && <Erreur message={messageErreur(enregistrer.error ?? deposerCv.error)} />}
 

@@ -129,6 +129,29 @@ export default function Agenda() {
             </div>
           </div>
         )}
+        {/* Téléphone : la semaine en liste, jour par jour (la grille horaire y est illisible). */}
+        {!reunions.isLoading && (
+          <ol className="agenda-liste" aria-label="Réunions de la semaine, jour par jour">
+            {jours.map((j) => {
+              const duJour = cetteSemaine.filter((b) => memeJour(b.debut, j)).sort((a, b) => a.debut.getTime() - b.debut.getTime());
+              return (
+                <li key={j.toISOString()} className={memeJour(j, maintenant) ? 'auj' : ''}>
+                  <h3>{jourEntete.format(j).replace(/^./, (c) => c.toUpperCase())}{memeJour(j, maintenant) && <span> · aujourd'hui</span>}</h3>
+                  {duJour.length === 0 ? <p className="vide">Rien de prévu</p> : duJour.map((b, k) => {
+                    const nom = b.reunion.nature === 'ENTRETIEN_CLIENT' ? b.reunion.candidatNom ?? b.reunion.entrepriseNom : b.reunion.candidatNom;
+                    return (
+                      <button key={`${b.reunion.id}-${k}`} type="button" className={`agenda-ligne ${classeBloc(b)}`} onClick={() => ouvrir(b.reunion.id)}>
+                        <span className="h">{fmtHeure(b.debut.toISOString())}<small>{fmtHeure(b.fin.toISOString())}</small></span>
+                        <span className="t"><b>{nom}</b><span>{b.option ?? (b.reunion.nature === 'ENTRETIEN_CLIENT' ? `Entretien · ${b.reunion.entrepriseNom}` : b.reunion.natureLibelle)}</span></span>
+                        <Icone nom="droite" taille={16} />
+                      </button>
+                    );
+                  })}
+                </li>
+              );
+            })}
+          </ol>
+        )}
       </section>
 
       {sel && !dialogue && (

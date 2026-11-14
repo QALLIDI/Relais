@@ -117,8 +117,10 @@ export function CandidatForm({
           <span>J'accepte que le cabinet conserve mon profil et le présente à des entreprises. Je peux le supprimer à tout moment depuis mon espace.</span>
         </label>
       )}
-      <div className="actions" style={{ justifyContent: 'flex-end' }}>
-        <button type="submit" className="btn primary" disabled={enCours}>{libelleBouton}</button>
+      {/* Barre d'enregistrement collée en bas de l'écran : le bouton reste à portée sur un long formulaire. */}
+      <div className="barre-enregistrer">
+        <span className="muted small">Vos modifications ne sont enregistrées qu'en cliquant ici.</span>
+        <button type="submit" className="btn primary" disabled={enCours}>{enCours ? 'Enregistrement…' : libelleBouton}</button>
       </div>
     </form>
   );

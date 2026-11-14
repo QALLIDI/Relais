@@ -601,7 +601,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .rdv.menthe { background: var(--green-bg); border-color: transparent; }
 .rdv .h { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; width: 44px; flex: none; }
 .rdv .txt { flex: 1; min-width: 0; }
-.rdv .txt b { display: block; font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rdv .txt b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13.5px; font-weight: 500; line-height: 1.3; }
 .rdv .txt span { font-size: 12px; color: var(--muted); }
 .rdv .etat { font-size: 11.5px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
 
@@ -1116,3 +1116,63 @@ button.notif-ligne > svg { align-self: center; color: var(--muted); flex: none; 
 .liens-legaux { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 6px 4px 0; font-size: 12px; }
 .liens-legaux a, .liens-legaux button { color: var(--muted); text-decoration: none; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
 .liens-legaux a:hover, .liens-legaux button:hover { color: var(--accent-ink); text-decoration: underline; }
+
+/* Accueil entreprise : ce qui attend le client, mis en avant */
+.ent-a-faire { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: var(--radius); background: var(--warn-bg); color: var(--ink); text-decoration: none; border: 1px solid transparent; }
+.ent-a-faire:hover { border-color: var(--warn); }
+.ent-a-faire .nb { flex: none; width: 40px; height: 40px; border-radius: 12px; background: var(--surface); color: var(--warn); font-size: 18px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+.ent-a-faire .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ent-a-faire .txt b { font-weight: 500; }
+.ent-a-faire .txt span { font-size: 13px; color: var(--ink-2); }
+@media (max-width: 600px) { .ent-a-faire { flex-wrap: wrap; } .ent-a-faire .btn { width: 100%; } }
+
+/* Agenda sur téléphone : liste par jour à la place de la grille horaire */
+.agenda-liste { display: none; list-style: none; margin: 0; padding: 0 12px 12px; }
+.agenda-liste li { padding: 10px 4px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.agenda-liste h3 { margin: 0; font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.agenda-liste li.auj h3 { color: var(--accent-ink); }
+.agenda-liste h3 span { font-weight: 400; }
+.agenda-liste .vide { margin: 0; font-size: 13px; color: var(--muted); }
+.agenda-ligne { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
+.agenda-ligne .h { flex: none; width: 46px; display: flex; flex-direction: column; font-size: 14px; font-weight: 500; }
+.agenda-ligne .h small { font-size: 11.5px; color: var(--muted); font-weight: 400; }
+.agenda-ligne .t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.agenda-ligne .t b { font-weight: 500; font-size: 14px; }
+.agenda-ligne .t span { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agenda-ligne > svg { color: var(--muted); flex: none; }
+@media (max-width: 700px) {
+  .agenda-defile { display: none; }
+  .agenda-liste { display: block; }
+}
+.agenda-ligne.client { border-left: 4px solid #7b6fe0; }
+.agenda-ligne.recruteur { border-left: 4px solid #3aa76d; }
+.agenda-ligne.propose { border-style: dashed; border-color: var(--warn-dot); }
+.agenda-ligne.clos { opacity: .65; }
+
+/* Barre d'enregistrement collée en bas (formulaires longs) */
+.barre-enregistrer { position: sticky; bottom: 12px; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px 10px 18px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); box-shadow: 0 10px 28px rgba(23, 24, 28, 0.12); }
+@media (max-width: 900px) { .barre-enregistrer { bottom: calc(88px + env(safe-area-inset-bottom)); border-radius: 20px; } }
+@media (max-width: 600px) { .barre-enregistrer > span { display: none; } .barre-enregistrer .btn { width: 100%; } }
+
+/* Nouveau besoin : colonne d'aide à droite sur grand écran, sous le formulaire ailleurs */
+.besoin-grille { grid-template-columns: minmax(0, 1fr) 380px; }
+@media (max-width: 1150px) { .besoin-grille { grid-template-columns: minmax(0, 1fr); } }
+
+/* Pipeline sur téléphone : compteurs compacts sur une ligne, le tableau remonte */
+@media (max-width: 700px) {
+  .pipeline-cote { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .pipeline-cote > .bloc { grid-column: 1 / -1; }
+  .compteur-carte { flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 12px; }
+  .compteur-carte .rond, .compteur-carte .mini-barres { display: none; }
+  .compteur-carte span { font-size: 11.5px; line-height: 1.3; }
+}
+
+/* Équipe : rôle et état regroupés ; sur téléphone, ils passent sous le nom */
+.membre-etats { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+@media (max-width: 600px) {
+  .membre { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 12px; row-gap: 6px; }
+  .membre > .mono-av { grid-row: 1 / span 2; align-self: start; }
+  .membre .txt { grid-column: 2; }
+  .membre .membre-etats { grid-column: 2; grid-row: 2; }
+  .membre .carte-menu { grid-column: 3; grid-row: 1; }
+}

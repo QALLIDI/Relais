@@ -86,7 +86,7 @@ export default function NouveauBesoin() {
         </div>
       )}
 
-      <div className="tableau-bord" style={{ gridTemplateColumns: 'minmax(0, 1fr) 380px' }}>
+      <div className="tableau-bord besoin-grille">
         <form className="bloc besoin" onSubmit={etape === 1 ? (e) => { e.preventDefault(); setEtape(2); } : soumettre}>
           <ol className="etapes-besoin" aria-label="Étapes">
             <li aria-current={etape === 1 ? 'step' : undefined}><button type="button" onClick={() => setEtape(1)}>1 · Le poste</button></li>

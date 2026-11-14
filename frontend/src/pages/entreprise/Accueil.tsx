@@ -10,7 +10,7 @@ import type { Facture, Mission, MissionResume, ProfilPresente } from '../../api/
 const jour = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' });
 const heure = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
 import { versFenetre } from '../../components/Fenetre';
-import { Chargement, Icone, Kpi, Pill, Progression, toneFacture, toneMission, Vide } from '../../components/ui';
+import { Chargement, Icone, Indicateur, Pill, Progression, TetePage, Vide, toneFacture, toneMission } from '../../components/ui';
 import { useSession } from '../../auth/useSession';
 
 /** Étapes vues par le client : besoin validé, recherche, shortlist, entretiens, embauche. */
@@ -40,16 +40,23 @@ export default function EntrepriseAccueil() {
 
   return (
     <div className="page">
-      <section className="header">
-        <div>
-          <div className="sub" style={{ marginTop: 0 }}>{prenom ? `Bonjour ${prenom}` : 'Bonjour'}</div>
-          <h1>Mes recrutements</h1>
-        </div>
-        <div className="kpis">
-          <Kpi label="Postes ouverts" value={missions.data?.filter((m) => m.statut === 'OUVERTE').length ?? '—'} />
-          <Kpi label="Profils à évaluer" value={aEvaluer} note={aEvaluer ? 'en attente' : undefined} tone={aEvaluer ? 'warn' : undefined} />
-          <Kpi label="Postes pourvus" value={pourvus} />
-        </div>
+      <TetePage titre={prenom ? `Bonjour ${prenom.split(' ')[0]}` : 'Mes recrutements'} sous="Où en sont vos recrutements, et ce qui attend votre avis.">
+        {admin && <Link className="btn primary" to="/entreprise/besoin"><Icone nom="plus" taille={16} />Nouveau besoin</Link>}
+      </TetePage>
+
+      {aEvaluer > 0 && (
+        <Link to={`/entreprise/shortlist/${aVoir.data?.[0]?.missionId ?? ''}`} className="ent-a-faire">
+          <span className="nb">{aEvaluer}</span>
+          <span className="txt"><b>{aEvaluer} profil{aEvaluer > 1 ? 's' : ''} attend{aEvaluer > 1 ? 'ent' : ''} votre avis</b><span>Un avis sous 48 h garde le rythme : les bons profils partent vite.</span></span>
+          <span className="btn small primary">Donner mon avis <Icone nom="droite" taille={14} /></span>
+        </Link>
+      )}
+
+      <section className="indicateurs" aria-label="Indicateurs">
+        <Indicateur label="Postes ouverts" valeur={missions.data?.filter((m) => m.statut === 'OUVERTE').length ?? '—'} note={`${actives.length} recrutement(s) en cours`} ton="lavande" />
+        <Indicateur label="Profils à évaluer" valeur={aEvaluer} note={aEvaluer ? 'votre avis est attendu' : 'rien en attente'} ton="ambre" />
+        <Indicateur label="Entretiens à venir" valeur={entretiens.length} note="confirmés ou proposés" />
+        <Indicateur label="Postes pourvus" valeur={pourvus} note="depuis le début" ton="vert" />
       </section>
 
       {missions.isLoading && <Chargement />}

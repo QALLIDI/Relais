@@ -78,8 +78,10 @@ export default function Equipe() {
                   <b>{nomComplet(m)}{m.moi && <span className="muted"> · vous</span>}</b>
                   <span>{[m.email, m.fonction].filter(Boolean).join(' · ')}</span>
                 </span>
-                <span className={`eq-role ${m.admin ? 'admin' : ''}`}>{m.admin ? 'Administrateur' : 'Membre'}</span>
-                {m.actif ? <span className="oui-non oui">Actif</span> : <span className="etat-carte attente">Invitation envoyée</span>}
+                <span className="membre-etats">
+                  <span className={`eq-role ${m.admin ? 'admin' : ''}`}>{m.admin ? 'Administrateur' : 'Membre'}</span>
+                  {m.actif ? <span className="oui-non oui">Actif</span> : <span className="etat-carte attente">Invitation envoyée</span>}
+                </span>
                 {jeSuisAdmin && !m.moi && (
                   <details className="carte-menu">
                     <summary aria-label={`Actions pour ${nomComplet(m)}`}>⋯</summary>
