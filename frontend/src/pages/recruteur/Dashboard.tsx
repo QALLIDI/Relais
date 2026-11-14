@@ -111,16 +111,17 @@ export default function Dashboard() {
             {candidatures.isLoading ? <div className="bloc-corps"><Chargement /></div>
               : activites.length === 0 ? <div className="bloc-corps"><Vide>Rien de nouveau sur cette période.</Vide></div>
               : (
-                <div className="table-wrap">
+                <div className="table-wrap activites-wrap">
                   <table className="activites-table">
+                    <colgroup><col /><col className="col-secondaire c-mission" /><col className="col-secondaire c-par" /><col className="c-quand" /></colgroup>
                     <thead><tr><th>Activité</th><th className="col-secondaire">Mission</th><th className="col-secondaire">Par</th><th className="num">Quand</th></tr></thead>
                     <tbody>
                       {activites.map((a) => (
                         <tr key={a.id}>
                           <td><div className="personne" style={{ gap: 10 }}><span className="mono-av" aria-hidden="true">{a.initiales}</span><span style={{ minWidth: 0 }}>{a.texte}<span className="muted small activite-mission">{a.mission}</span></span></div></td>
-                          <td className="muted col-secondaire">{a.mission}</td>
-                          <td className="muted col-secondaire">{a.par}</td>
-                          <td className="num muted">{ilYa(a.quand, maintenant)}</td>
+                          <td className="muted col-secondaire tronque" title={a.mission}>{a.mission}</td>
+                          <td className="muted col-secondaire tronque" title={a.par}>{a.par}</td>
+                          <td className="num muted quand">{ilYa(a.quand, maintenant)}</td>
                         </tr>
                       ))}
                     </tbody>

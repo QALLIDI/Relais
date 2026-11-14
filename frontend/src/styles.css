@@ -1096,14 +1096,21 @@ button.notif-ligne > svg { align-self: center; color: var(--muted); flex: none; 
 .fact-table td { vertical-align: middle; }
 .fact-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
 
-/* Tableau de bord : sur téléphone, seules l'activité et l'heure restent ; la mission passe sous l'activité. */
-.activites-table { min-width: 640px; }
-@media (max-width: 700px) {
-  .activites-table { min-width: 0; }
-  .activites-table .col-secondaire { display: none; }
-  .activite-mission { display: block; }
-}
+/* Tableau de bord : le tableau des activités suit la largeur de sa colonne, sans défilement horizontal.
+   Mission et « Par » tiennent sur une ligne (texte complet au survol) ; « Quand » ne se coupe jamais.
+   Quand la colonne devient étroite, la mission passe sous l'activité et « Par » disparaît. */
+.activites-wrap { overflow-x: visible; container-type: inline-size; }
+.activites-table { width: 100%; table-layout: fixed; }
+.activites-table .c-mission { width: 30%; }
+.activites-table .c-par { width: 18%; }
+.activites-table .c-quand { width: 104px; }
+.activites-table td.tronque { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.activites-table td.quand, .activites-table th.num { white-space: nowrap; }
 .activite-mission { display: none; }
+@container (max-width: 620px) {
+  .activites-table .col-secondaire { display: none; }
+  .activite-mission { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
 
 /* ---------- Bandeau cookies (bas de page, non bloquant) ---------- */
 .bandeau-cookies { position: fixed; left: 16px; bottom: 16px; z-index: 80; max-width: 460px; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 16px 40px rgba(23, 24, 28, 0.16); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; font-size: 13.5px; line-height: 1.5; }
