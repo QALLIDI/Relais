@@ -1,224 +1,240 @@
-/* Page de connexion au design « Épuré » (maquette « Connexion (commune) ») :
-   panneau bleu très pâle à gauche, formulaire à droite, même palette que l'application. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+/* Pages Keycloak de Recrut (connexion, mot de passe oublié, vérification d'e-mail…), design « Épuré ».
+   Une seule feuille, sans PatternFly : le gabarit template.ftl pose sa propre mise en page.
+   Mêmes couleurs que l'application ; le mode sombre suit le réglage du système. */
 
 :root {
-  --canvas: #ecedef;
-  --frame: #ffffff;
+  --fond: #ffffff;
   --surface: #ffffff;
-  --border: #e4e6ea;
+  --sunken: #f3f4f6;
+  --border: #dfe2e7;
+  --line: #eceef1;
   --ink: #17181c;
   --ink-2: #3e3f44;
   --muted: #6b6c71;
-  --inverse: #d3e6fb;
-  --inverse-ink: #164a7e;
   --accent: #4a8fdb;
+  --accent-strong: #2f6fb8;
+  --accent-soft: #e4effc;
   --accent-ink: #1f5fa0;
-  --brand: #2f6fb8;
-  --panel: linear-gradient(150deg, #edf5fe 0%, #f6faff 55%, #e6f1fc 100%);
-  --bad-bg: #fde2e1;
-  --bad: #c4312f;
+  --bouton: #d3e6fb;
+  --bouton-ink: #164a7e;
+  --bouton-survol: #c2dbf8;
+  --bad-bg: #fde8e7;
+  --bad: #b42b29;
+  --ok-bg: #e3f4ea;
+  --ok: #1d7a46;
+  --warn-bg: #fdf1dc;
+  --warn: #8a5a00;
+  --panneau: linear-gradient(160deg, #2f6fb8 0%, #285f9f 45%, #1f4f87 100%);
+  --rayon: 12px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --canvas: #0e0f12;
-    --frame: #16171b;
-    --surface: #202127;
-    --border: #2e2f35;
+    --fond: #121317;
+    --surface: #1b1c21;
+    --sunken: #23252b;
+    --border: #33353c;
+    --line: #2a2c32;
     --ink: #ececea;
-    --ink-2: #c2c3c8;
-    --muted: #a3a4aa;
-    --inverse: #21364f;
-    --inverse-ink: #cfe3fa;
+    --ink-2: #c6c7cc;
+    --muted: #a0a1a7;
+    --accent-soft: #1d2d42;
     --accent-ink: #8ec1f5;
-    --panel: linear-gradient(150deg, #1c2633 0%, #1a2129 100%);
-    --bad-bg: #3a1c1b;
-    --bad: #ff8a85;
+    --bouton: #21364f;
+    --bouton-ink: #cfe3fa;
+    --bouton-survol: #29425f;
+    --bad-bg: #3a1d1c;
+    --bad: #ff9a95;
+    --ok-bg: #16301f;
+    --ok: #7fd3a1;
+    --warn-bg: #352a12;
+    --warn: #f0c46c;
+    --panneau: linear-gradient(160deg, #1f4675 0%, #1a3a61 50%, #142c4a 100%);
   }
 }
 
-html.login-pf, .login-pf body {
-  background: var(--canvas) !important;
+*, *::before, *::after { box-sizing: border-box; }
+html.kc-html, body.kc-corps { margin: 0; min-height: 100%; }
+body.kc-corps {
+  background: var(--fond);
   color: var(--ink);
-  font-family: 'Inter', system-ui, sans-serif;
-}
-.login-pf body * { font-family: inherit; }
-
-.login-pf-page {
-  box-sizing: border-box;
-  max-width: 1400px;
-  min-height: calc(100vh - 40px);
-  margin: 20px auto;
-  padding: 16px;
-  background: var(--frame);
-  border-radius: 22px;
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
-  gap: 16px;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Panneau d'accroche (décoratif) */
-.login-pf-page::before {
-  content: 'Les bons profils, pré-sélectionnés pour vous.';
-  grid-column: 1;
-  grid-row: 1 / span 2;
+/* ---------- Mise en page : panneau de marque | formulaire ---------- */
+.kc-page { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: 100vh; }
+
+.kc-panneau {
+  position: relative;
+  overflow: hidden;
   display: flex;
-  align-items: flex-end;
-  padding: 36px;
-  border-radius: 18px;
-  background: var(--panel);
-  box-shadow: inset 0 0 0 1px rgba(74, 143, 219, 0.18);
-  color: var(--ink);
-  font-size: 40px;
-  font-weight: 500;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 40px 56px;
+  background: var(--panneau);
+  color: #fff;
 }
+/* Cercles décoratifs */
+.kc-panneau::before, .kc-panneau::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+}
+.kc-panneau::before { width: 560px; height: 560px; right: -220px; top: -180px; }
+.kc-panneau::after { width: 380px; height: 380px; left: -160px; bottom: -150px; border-color: rgba(255, 255, 255, 0.1); }
 
-/* Nom de la plateforme, en pastille */
-.login-pf-page .login-pf-page-header, #kc-header {
-  grid-column: 2;
-  margin: 0;
-  padding: 16px 16px 0;
+.kc-marque { display: inline-flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; position: relative; }
+.kc-panneau .kc-marque svg rect { fill: #fff; }
+.kc-panneau .kc-marque svg circle:first-of-type, .kc-panneau .kc-marque svg path { fill: #2f6fb8; stroke: #2f6fb8; }
+.kc-panneau .kc-marque svg circle:last-of-type { fill: #7fb0e8; }
+
+.kc-accroche { position: relative; max-width: 470px; }
+.kc-accroche-titre { margin: 0 0 24px; font-size: clamp(30px, 3.2vw, 44px); line-height: 1.08; font-weight: 500; letter-spacing: -0.02em; }
+.kc-points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; font-size: 15px; color: rgba(255, 255, 255, 0.86); }
+.kc-points li { display: flex; align-items: flex-start; gap: 12px; }
+.kc-puce { flex: none; width: 20px; height: 20px; margin-top: 1px; border-radius: 50%; background: rgba(255, 255, 255, 0.16); position: relative; }
+.kc-puce::after { content: ''; position: absolute; left: 6px; top: 4px; width: 6px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+/* Aperçu d'une shortlist, comme sur la page d'accueil */
+.kc-apercu { position: relative; align-self: flex-start; width: min(100%, 380px); padding: 16px 18px; border-radius: 18px; background: rgba(255, 255, 255, 0.96); color: #17181c; box-shadow: 0 24px 48px rgba(10, 30, 60, 0.28); display: flex; flex-direction: column; gap: 12px; }
+.kc-apercu-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.kc-apercu-tete small { display: block; font-size: 11.5px; color: #6b6c71; }
+.kc-apercu-tete b { font-size: 15px; font-weight: 500; }
+.kc-apercu-tete em { font-style: normal; font-size: 11.5px; font-weight: 500; padding: 3px 10px; border-radius: 999px; background: #e3f4ea; color: #1d7a46; white-space: nowrap; }
+.kc-apercu-ligne { display: flex; align-items: center; gap: 10px; }
+.kc-av { flex: none; width: 34px; height: 34px; border-radius: 50%; background: #4a8fdb; color: #fff; font-size: 11.5px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+.kc-nom { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 500; display: flex; flex-direction: column; }
+.kc-nom small { font-size: 12px; font-weight: 400; color: #6b6c71; }
+.kc-score { width: 96px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.kc-score b { font-size: 12.5px; font-weight: 600; }
+.kc-score > i { display: block; width: 100%; height: 5px; border-radius: 999px; background: #eceef1; }
+.kc-score > i > i { display: block; height: 100%; border-radius: 999px; background: #4a8fdb; }
+.kc-pied-panneau { position: relative; margin: 0; font-size: 13px; color: rgba(255, 255, 255, 0.7); }
+
+/* ---------- Colonne du formulaire ---------- */
+.kc-cote { display: flex; align-items: center; justify-content: center; padding: 48px 32px; }
+.kc-carte { width: 100%; max-width: 400px; }
+.kc-marque-mobile { display: none; margin-bottom: 28px; color: var(--ink); }
+.kc-carte-tete { margin-bottom: 24px; }
+#kc-page-title { margin: 0; font-size: 30px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.15; }
+.kc-sous-titre { margin: 6px 0 0; color: var(--muted); font-size: 15px; }
+.kc-sous-titre .required, .required { color: var(--bad); }
+
+/* Utilisateur déjà saisi (étapes suivantes du parcours) */
+.kc-utilisateur { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-radius: var(--rayon); background: var(--sunken); }
+.kc-utilisateur label { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kc-utilisateur a { flex: none; font-size: 13.5px; }
+
+/* Langue */
+.kc-langue { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+.kc-langue button { border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.kc-langue-liste { position: absolute; list-style: none; margin: 4px 0 0; padding: 6px; border: 1px solid var(--border); border-radius: var(--rayon); background: var(--surface); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12); }
+.kc-langue-liste[aria-hidden='true'], #kc-locale ul:not(.show) { display: none; }
+#kc-locale-dropdown { position: relative; }
+#kc-locale-dropdown:hover ul, #kc-locale-dropdown:focus-within ul { display: block; }
+.kc-langue-lien { display: block; padding: 6px 10px; border-radius: 8px; color: var(--ink); text-decoration: none; }
+.kc-langue-lien:hover { background: var(--sunken); }
+
+/* ---------- Formulaires ---------- */
+#kc-content-wrapper { display: flex; flex-direction: column; gap: 18px; }
+form { display: flex; flex-direction: column; gap: 16px; margin: 0; }
+.kc-groupe { display: flex; flex-direction: column; gap: 6px; margin: 0; }
+.kc-label, label { font-size: 13.5px; font-weight: 500; color: var(--ink-2); }
+.kc-label-zone, .kc-champ-zone { display: contents; }
+.kc-champ, input[type='text'], input[type='email'], input[type='password'], input[type='tel'], input[type='number'], select, textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--rayon);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-#kc-header-wrapper {
+.kc-champ:hover, input:hover { border-color: #c7ccd4; }
+.kc-champ:focus, input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(74, 143, 219, 0.22); }
+.kc-champ[aria-invalid='true'], input[aria-invalid='true'] { border-color: var(--bad); }
+.kc-erreur-champ { font-size: 13px; color: var(--bad); }
+
+/* Mot de passe avec bouton « œil » */
+.kc-groupe-mdp { position: relative; display: flex; }
+.kc-groupe-mdp .kc-champ, .kc-groupe-mdp input { padding-right: 48px; }
+.kc-oeil { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.kc-oeil:hover { background: var(--sunken); color: var(--ink); }
+.kc-oeil:focus-visible { outline: 2px solid var(--accent); }
+.kc-oeil i { display: block; width: 18px; height: 18px; background: currentColor; -webkit-mask: var(--icone) center / contain no-repeat; mask: var(--icone) center / contain no-repeat; }
+.kc-icone-voir { --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E"); }
+.kc-icone-cacher { --icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.9 17.9A10.7 10.7 0 0 1 12 19c-6.4 0-10-7-10-7a18.5 18.5 0 0 1 5.1-5.9M9.9 5.2A9.1 9.1 0 0 1 12 5c6.4 0 10 7 10 7a18.6 18.6 0 0 1-2.2 3.2M14.1 14.1a3 3 0 1 1-4.2-4.2M2 2l20 20'/%3E%3C/svg%3E"); }
+
+/* Options : rester connecté | mot de passe oublié */
+.kc-reglages { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: -4px; }
+.kc-reglages .checkbox label, .checkbox label { display: inline-flex; align-items: center; gap: 8px; font-weight: 400; color: var(--ink-2); cursor: pointer; }
+input[type='checkbox'], input[type='radio'] { width: 17px; height: 17px; margin: 0; accent-color: var(--accent-strong); }
+.kc-options-liens { font-size: 14px; }
+
+/* Boutons */
+.kc-bouton, input[type='submit'], button[type='submit'] {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 20px;
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: normal;
-  text-transform: none;
-  white-space: normal;
-}
-#kc-header-wrapper::before {
-  content: '';
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--brand);
-}
-
-/* Carte du formulaire : transparente, centrée dans la colonne de droite */
-.login-pf-page .card-pf {
-  grid-column: 2;
-  align-self: center;
-  justify-self: center;
-  width: 100%;
-  max-width: 420px;
-  margin: 0;
-  padding: 32px 16px;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  color: var(--ink);
-}
-.login-pf-page .login-pf-header { margin-bottom: 18px; }
-#kc-page-title {
-  font-size: 40px;
-  font-weight: 400;
-  letter-spacing: -0.02em;
-  text-align: left;
-  color: var(--ink);
-}
-
-.login-pf-page label, .login-pf-page .pf-c-form__label, .login-pf-page .control-label {
-  color: var(--ink-2);
-  font-size: 13px;
-  font-weight: 500;
-}
-.login-pf-page input[type='text'],
-.login-pf-page input[type='email'],
-.login-pf-page input[type='password'],
-.login-pf-page .pf-c-form-control,
-.login-pf-page .form-control {
-  height: auto;
+  justify-content: center;
+  gap: 8px;
   min-height: 48px;
-  padding: 12px 18px;
-  border: 1px solid var(--border) !important;
-  border-radius: 999px !important;
-  background: var(--surface) !important;
-  color: var(--ink) !important;
-  font-size: 15px;
-  box-shadow: none;
-}
-.login-pf-page .pf-c-form-control::after { display: none; }
-.login-pf-page input:focus-visible, .login-pf-page .pf-c-form-control:focus-within {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-.login-pf-page .pf-c-input-group button, .login-pf-page .pf-c-button.pf-m-control {
+  padding: 0 22px;
+  border: 1px solid transparent;
   border-radius: 999px;
-  background: transparent;
-  color: var(--muted);
-}
-.login-pf-page input[type='checkbox'] { accent-color: var(--accent); width: 18px; height: 18px; }
-
-.login-pf-page input[type='submit'],
-.login-pf-page .pf-c-button.pf-m-primary,
-.login-pf-page .btn-primary,
-#kc-login {
-  min-height: 50px;
-  border: 0 !important;
-  border-radius: 999px !important;
-  background: var(--inverse) !important;
-  color: var(--inverse-ink) !important;
+  font: inherit;
   font-size: 15px;
   font-weight: 500;
-  box-shadow: none;
-}
-.login-pf-page .btn-default, .login-pf-page .pf-c-button.pf-m-secondary {
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--ink);
-  border: 0;
-}
-
-.login-pf-page a { color: var(--ink); text-decoration: underline; }
-.login-pf-page a:hover { color: var(--accent-ink); }
-#kc-registration-container, #kc-info {
-  margin-top: 18px;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  color: var(--muted);
-}
-#kc-registration a, #kc-registration-container a {
-  display: inline-block;
-  margin-top: 8px;
-  padding: 12px 20px;
-  border-radius: 999px;
-  background: var(--surface);
   text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
 }
-.login-pf-page .alert, .login-pf-page .pf-c-alert {
-  border: 0;
-  border-radius: 20px;
-  background: var(--bad-bg);
-  color: var(--bad);
-}
-#kc-locale ul { border-radius: 16px; }
+.kc-bouton.primaire, input[type='submit'].primaire, #kc-login { background: var(--bouton); color: var(--bouton-ink); }
+.kc-bouton.primaire:hover, #kc-login:hover { background: var(--bouton-survol); }
+.kc-bouton.secondaire { background: var(--surface); color: var(--ink); border-color: var(--border); }
+.kc-bouton.secondaire:hover { background: var(--sunken); }
+.kc-bouton.bloc, #kc-login { width: 100%; }
+.kc-bouton:focus-visible, input[type='submit']:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.kc-bouton:disabled, input[type='submit']:disabled { opacity: 0.6; cursor: default; }
+.kc-boutons { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+#kc-form-buttons { margin-top: 4px; }
 
-@media (max-width: 900px) {
-  .login-pf-page {
-    margin: 0;
-    min-height: 100vh;
-    border-radius: 0;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto 1fr;
-  }
-  .login-pf-page::before {
-    grid-column: 1;
-    grid-row: 2;
-    min-height: 0;
-    padding: 24px;
-    font-size: 30px;
-  }
-  .login-pf-page .login-pf-page-header, #kc-header { grid-column: 1; grid-row: 1; padding: 0; }
-  .login-pf-page .card-pf { grid-column: 1; grid-row: 3; padding: 16px 0; }
+/* Liens */
+a { color: var(--accent-ink); text-decoration: none; font-weight: 500; }
+a:hover { text-decoration: underline; }
+#kc-registration a.kc-bouton:hover { text-decoration: none; }
+
+/* Messages */
+.kc-alerte { padding: 12px 14px; border-radius: var(--rayon); font-size: 14px; background: var(--accent-soft); color: var(--accent-ink); }
+.kc-alerte.error { background: var(--bad-bg); color: var(--bad); }
+.kc-alerte.success { background: var(--ok-bg); color: var(--ok); }
+.kc-alerte.warning { background: var(--warn-bg); color: var(--warn); }
+.kc-alerte-texte { display: block; }
+#instruction1, .instruction { color: var(--ink-2); }
+
+/* Inscription et informations sous le formulaire */
+.kc-info { margin-top: 8px; padding-top: 22px; border-top: 1px solid var(--line); }
+#kc-registration { display: flex; flex-direction: column; gap: 10px; color: var(--muted); font-size: 14px; text-align: center; }
+#try-another-way { font-size: 14px; }
+.kc-social hr { border: 0; border-top: 1px solid var(--line); margin: 8px 0 16px; }
+.kc-social h2 { font-size: 13px; font-weight: 500; color: var(--muted); margin: 0 0 10px; text-align: center; }
+.kc-social-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 960px) {
+  .kc-page { grid-template-columns: minmax(0, 1fr); }
+  .kc-panneau { display: none; }
+  .kc-marque-mobile { display: inline-flex; }
+  .kc-cote { align-items: flex-start; padding: 32px 20px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .kc-carte { animation: kc-entree 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+  @keyframes kc-entree { from { opacity: 0; transform: translateY(10px); } }
 }

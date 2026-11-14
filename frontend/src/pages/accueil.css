@@ -1,7 +1,7 @@
 /* Page d'accueil publique. Tout est préfixé par .accueil pour ne rien changer au reste de l'application. */
-.accueil { max-width: 1440px; margin: 20px auto; background: var(--col); border-radius: 22px; box-shadow: var(--frame-shadow); padding: 18px 28px 26px; color: var(--ink); }
-@media (max-width: 1480px) { .accueil { margin: 20px; } }
-@media (max-width: 700px) { .accueil { margin: 0; border-radius: 0; padding: 12px 16px 24px; box-shadow: none; } }
+/* Pleine fenêtre ; le contenu reste centré sur 1384 px au plus. */
+.accueil { min-height: 100vh; background: var(--col); padding: 18px max(28px, calc((100vw - 1384px) / 2)) 26px; color: var(--ink); }
+@media (max-width: 700px) { .accueil { padding: 12px 16px 24px; } }
 .accueil .evitement { position: absolute; left: -9999px; }
 .accueil .evitement:focus { left: 16px; top: 16px; z-index: 10; background: var(--surface); padding: 8px 12px; border-radius: 8px; }
 .accueil .muted { color: var(--muted); }

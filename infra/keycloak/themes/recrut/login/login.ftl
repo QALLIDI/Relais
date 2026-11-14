@@ -1,4 +1,4 @@
-<#-- Copie de base/login/login.ftl (Keycloak 26.4) : seule la section « info » change. -->
+<#-- Copie de base/login/login.ftl (Keycloak 26.4) : seule la section « info » (lien d'inscription) change. -->
 <#import "template.ftl" as layout>
 <#import "passkeys.ftl" as passkeys>
 <@layout.registrationLayout displayMessage=!messagesPerField.existsError('username','password') displayInfo=realm.password; section>
@@ -89,8 +89,8 @@
             <#assign front = (client.baseUrl)!(properties.frontUrl!"http://localhost:3000/")>
             <div id="kc-registration-container">
                 <div id="kc-registration">
-                    <span>${msg("noAccount")} <a tabindex="8"
-                                                 href="${front?remove_ending("/")}/inscription">${msg("doRegister")}</a></span>
+                    <span>${msg("noAccount")}</span>
+                    <a tabindex="8" class="kc-bouton secondaire bloc" href="${front?remove_ending("/")}/inscription">${msg("doRegister")}</a>
                 </div>
             </div>
         </#if>

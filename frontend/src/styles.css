@@ -193,9 +193,8 @@ h2 { margin: 0; font-size: 18px; font-weight: 500; }
 .crumbs a:hover { color: var(--accent-ink); }
 
 /* Cadre de l'application : barre latérale + contenu */
-.app-frame { max-width: 1440px; margin: 20px auto; background: var(--frame); border-radius: 22px; box-shadow: var(--frame-shadow); display: flex; min-height: calc(100vh - 40px); overflow: clip; }
-@media (max-width: 1480px) { .app-frame { margin: 20px; } }
-@media (max-width: 700px) { .app-frame { margin: 0; border-radius: 0; min-height: 100vh; box-shadow: none; } }
+/* La plateforme occupe toute la fenêtre, collée aux bords du navigateur. */
+.app-frame { background: var(--frame); display: flex; min-height: 100vh; overflow: clip; }
 
 .sidebar { flex: 0 0 232px; padding: 20px 14px 18px; display: flex; flex-direction: column; background: var(--side-bg); }
 .brand-ligne { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 0 6px; margin-bottom: 18px; }
@@ -1045,3 +1044,8 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .eq-choix span { display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; }
 .eq-choix b { font-weight: 500; }
 .eq-choix small { font-size: 12.5px; color: var(--muted); }
+
+/* Menu du compte : nom et rôle (plus d'e-mail affiché). */
+.compte-menu-nom { display: flex; flex-direction: column; gap: 1px; padding: 2px 4px 6px; line-height: 1.3; }
+.compte-menu-nom b { font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compte-menu-nom span { font-size: 12px; color: var(--muted); }

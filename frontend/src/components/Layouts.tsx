@@ -36,9 +36,11 @@ export function useFilAriane(miettes: Miette[] | null) {
   }, [cle, definir]);
 }
 
+/** Nom affiché de l'utilisateur : nom complet, sinon prénom + nom ; l'e-mail seulement en dernier recours. */
 function useNom() {
-  const auth = useAuth();
-  return auth.user?.profile.name ?? auth.user?.profile.email ?? '';
+  const p = useAuth().user?.profile;
+  const complet = p?.name?.trim() || [p?.given_name, p?.family_name].filter(Boolean).join(' ').trim();
+  return complet || p?.preferred_username || p?.email || '';
 }
 
 /** Carte « Compte » en bas de la barre latérale : ouvre un petit menu avec la déconnexion. */
@@ -52,7 +54,7 @@ function Compte({ role }: { role: string }) {
         <span className="who"><b>{nom}</b><span>{role}</span></span>
       </summary>
       <div className="menu">
-        <div className="muted small">{auth.user?.profile.email}</div>
+        <div className="compte-menu-nom"><b>{nom}</b><span>{role}</span></div>
         <button className="btn small danger" type="button" onClick={() => auth.signoutRedirect()}>
           <Icone nom="sortie" taille={16} /> Se déconnecter
         </button>
