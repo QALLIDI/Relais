@@ -12,7 +12,8 @@ import { Logo } from './Logo';
 import { totalNonLus, useMessagesNonLus } from '../api/messagerie';
 import { useSession } from '../auth/useSession';
 
-type Lien = { to: string; label: string; icone: NomIcone; end?: boolean; compte?: number };
+/** `court` : libellé plus court pour la barre du bas sur téléphone. */
+type Lien = { to: string; label: string; court?: string; icone: NomIcone; end?: boolean; compte?: number };
 type Groupe = { titre: string; liens: Lien[] };
 export type Miette = { label: string; to?: string };
 
@@ -68,9 +69,12 @@ function lireReplie() {
 }
 
 /** Cadre commun aux trois espaces : barre latérale groupée, bandeau avec fil d'Ariane, recherche, notifications et thème. */
-function Cadre({ classe, espace, accueil, sous, groupes, notifications, recherche, role, children }: {
+function Cadre({ classe, espace, accueil, sous, groupes, notifications, recherche, role, mobile, children }: {
   classe?: string; espace: 'recruteur' | 'entreprise' | 'candidat'; accueil: string; sous?: string; groupes: Groupe[];
-  notifications: string; recherche?: string; role: string; children: ReactNode;
+  notifications: string; recherche?: string; role: string;
+  /** Liens de la barre du bas sur téléphone (4 au plus) ; les autres sont dans « Plus ». */
+  mobile: string[];
+  children: ReactNode;
 }) {
   const { data: nonLues } = useNonLues();
   const { theme, basculer } = useTheme();
@@ -91,6 +95,8 @@ function Cadre({ classe, espace, accueil, sous, groupes, notifications, recherch
     .filter((l) => (l.end ? pathname === l.to : pathname === l.to || pathname.startsWith(l.to + '/')))
     .sort((a, b) => b.to.length - a.to.length)[0];
   const miettes: Miette[] = fil ?? (pathname.endsWith('/notifications') ? [{ label: 'Notifications' }] : courant ? [{ label: courant.label }] : []);
+  const enBas = mobile.map((to) => tous.find((l) => l.to === to)).filter((l): l is Lien => !!l);
+  const autres = tous.filter((l) => !mobile.includes(l.to));
 
   return (
     <FilContexte.Provider value={setFil}>
@@ -122,6 +128,7 @@ function Cadre({ classe, espace, accueil, sous, groupes, notifications, recherch
         </aside>
         <div className="app-body">
           <header className="topbar">
+            <Link to={accueil} className="marque-mobile" aria-label="Recrut, accueil"><Logo taille={28} /></Link>
             <nav className="fil" aria-label="Fil d'Ariane">
               <ol>
                 <li><Link to={accueil}>Recrut</Link></li>
@@ -146,9 +153,66 @@ function Cadre({ classe, espace, accueil, sous, groupes, notifications, recherch
           </header>
           {children}
         </div>
+        <NavigationMobile liens={enBas} autres={autres} role={role} />
         <FenetresGlobales espace={espace} />
       </div>
     </FilContexte.Provider>
+  );
+}
+
+/**
+ * Téléphone et tablette : barre d'onglets fixée en bas (liens principaux + « Plus »).
+ * « Plus » ouvre une feuille avec les autres pages, le compte et la déconnexion.
+ */
+function NavigationMobile({ liens, autres, role }: { liens: Lien[]; autres: Lien[]; role: string }) {
+  const auth = useAuth();
+  const nom = useNom();
+  const { pathname } = useLocation();
+  const [ouvert, setOuvert] = useState(false);
+  useEffect(() => { setOuvert(false); }, [pathname]);
+  useEffect(() => {
+    if (!ouvert) return;
+    const echap = (e: KeyboardEvent) => { if (e.key === 'Escape') setOuvert(false); };
+    window.addEventListener('keydown', echap);
+    return () => window.removeEventListener('keydown', echap);
+  }, [ouvert]);
+  const autreActif = autres.some((l) => pathname === l.to || pathname.startsWith(l.to + '/'));
+  const compteAutres = autres.reduce((s, l) => s + (l.compte ?? 0), 0);
+  return (
+    <>
+      <nav className="barre-bas" aria-label="Navigation principale">
+        {liens.map((l) => (
+          <NavLink key={l.to} to={l.to} end={l.end}>
+            <span className="ico-zone"><Icone nom={l.icone} taille={20} />{l.compte ? <span className="nb" aria-label={`${l.compte} non lu(s)`}>{l.compte}</span> : null}</span>
+            {l.court ?? l.label}
+          </NavLink>
+        ))}
+        <button type="button" className={autreActif || ouvert ? 'active' : ''} aria-expanded={ouvert} aria-controls="feuille-plus" onClick={() => setOuvert((o) => !o)}>
+          <span className="ico-zone"><Icone nom="grille" taille={20} />{compteAutres ? <span className="nb">{compteAutres}</span> : null}</span>
+          Plus
+        </button>
+      </nav>
+      {ouvert && (
+        <div className="feuille-plus-fond" onMouseDown={(e) => { if (e.target === e.currentTarget) setOuvert(false); }}>
+          <div className="feuille-plus" id="feuille-plus" role="dialog" aria-modal="true" aria-label="Plus de pages">
+            <span className="poignee" aria-hidden="true" />
+            <nav className="feuille-plus-liens" aria-label="Autres pages">
+              {autres.map((l) => (
+                <NavLink key={l.to} to={l.to} end={l.end}>
+                  <Icone nom={l.icone} taille={18} /><span>{l.label}</span>
+                  {l.compte ? <span className="compte">{l.compte}</span> : null}
+                </NavLink>
+              ))}
+            </nav>
+            <div className="feuille-plus-compte">
+              <span className="avatar" aria-hidden="true">{initiales(nom) || '?'}</span>
+              <span className="who"><b>{nom}</b><span>{role}</span></span>
+              <button className="btn small" type="button" onClick={() => auth.signoutRedirect()}><Icone nom="sortie" taille={16} />Se déconnecter</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -158,7 +222,7 @@ export function RecruteurLayout() {
     {
       titre: 'Menu principal',
       liens: [
-        { to: '/recruteur', label: 'Tableau de bord', icone: 'maison', end: true },
+        { to: '/recruteur', label: 'Tableau de bord', court: 'Accueil', icone: 'maison', end: true },
         { to: '/recruteur/missions', label: 'Missions', icone: 'mallette' },
         { to: '/recruteur/pipeline', label: 'Pipeline', icone: 'colonnes' },
         { to: '/recruteur/vivier', label: 'Vivier', icone: 'groupe' },
@@ -172,7 +236,8 @@ export function RecruteurLayout() {
     { titre: 'Clients', liens: [{ to: '/recruteur/entreprises', label: 'Entreprises', icone: 'immeuble' }] },
   ];
   return (
-    <Cadre espace="recruteur" accueil="/recruteur" groupes={groupes} notifications="/recruteur/notifications" recherche="/recruteur/vivier" role="Recruteur">
+    <Cadre espace="recruteur" accueil="/recruteur" groupes={groupes} notifications="/recruteur/notifications" recherche="/recruteur/vivier" role="Recruteur"
+      mobile={['/recruteur', '/recruteur/missions', '/recruteur/vivier', '/recruteur/messages']}>
       <main className="app-main">
         <Outlet />
       </main>
@@ -188,7 +253,7 @@ export function EntrepriseLayout() {
     {
       titre: 'Menu principal',
       liens: [
-        { to: '/entreprise', label: 'Mes recrutements', icone: 'maison', end: true },
+        { to: '/entreprise', label: 'Mes recrutements', court: 'Accueil', icone: 'maison', end: true },
         { to: '/entreprise/entretiens', label: 'Entretiens', icone: 'agenda' },
         { to: '/entreprise/messages', label: 'Messages', icone: 'bulle', compte: messages },
         // Factures et propositions : réservées aux administrateurs de l'entreprise.
@@ -199,7 +264,8 @@ export function EntrepriseLayout() {
     ...(admin ? [{ titre: 'Actions', liens: [{ to: '/entreprise/besoin', label: 'Nouveau besoin', icone: 'plus' as const }] }] : []),
   ];
   return (
-    <Cadre classe="layout-entreprise" espace="entreprise" accueil="/entreprise" sous={entreprise.data?.raisonSociale} groupes={groupes} notifications="/entreprise/notifications" role={admin ? 'Administrateur' : 'Membre'}>
+    <Cadre classe="layout-entreprise" espace="entreprise" accueil="/entreprise" sous={entreprise.data?.raisonSociale} groupes={groupes} notifications="/entreprise/notifications" role={admin ? 'Administrateur' : 'Membre'}
+      mobile={['/entreprise', '/entreprise/entretiens', '/entreprise/messages', admin ? '/entreprise/besoin' : '/entreprise/equipe']}>
       <main className="app-main">
         <Outlet />
       </main>
@@ -220,15 +286,11 @@ export function CandidatLayout() {
     },
   ];
   return (
-    <Cadre classe="layout-candidat" espace="candidat" accueil="/candidat" groupes={groupes} notifications="/candidat/notifications" role="Candidat">
+    <Cadre classe="layout-candidat" espace="candidat" accueil="/candidat" groupes={groupes} notifications="/candidat/notifications" role="Candidat"
+      mobile={['/candidat', '/candidat/profil', '/candidat/donnees']}>
       <main className="app-main">
         <Outlet />
       </main>
-      <nav className="barre-bas" aria-label="Navigation candidat">
-        {groupes[0].liens.map((l) => (
-          <NavLink key={l.to} to={l.to} end={l.end}><Icone nom={l.icone} taille={18} />{l.label}</NavLink>
-        ))}
-      </nav>
     </Cadre>
   );
 }

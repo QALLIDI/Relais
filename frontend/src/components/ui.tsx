@@ -162,7 +162,7 @@ export type NomIcone =
   | 'cloche' | 'lune' | 'soleil' | 'fleche' | 'plus' | 'loupe' | 'sortie'
   | 'maison' | 'mallette' | 'groupe' | 'grille' | 'immeuble' | 'facture' | 'stats' | 'agenda' | 'profil' | 'filtre' | 'chevron'
   | 'check' | 'croix' | 'horloge' | 'tiret' | 'suivant' | 'externe' | 'etincelle'
-  | 'colonnes' | 'panneau' | 'droite' | 'gauche' | 'reglages' | 'bulle' | 'coche';
+  | 'colonnes' | 'panneau' | 'droite' | 'gauche' | 'reglages' | 'bulle' | 'coche' | 'mail' | 'telephone';
 
 export function Icone({ nom, taille = 18 }: { nom: NomIcone; taille?: number }) {
   const chemins: Record<NomIcone, ReactNode> = {
@@ -196,6 +196,8 @@ export function Icone({ nom, taille = 18 }: { nom: NomIcone; taille?: number }) 
     gauche: <path d="M15 6l-6 6 6 6" />,
     reglages: <><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1" /></>,
     bulle: <path d="M4 5h16v11H9l-5 4z" />,
+    mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></>,
+    telephone: <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" />,
     coche: <><rect x="4" y="4" width="16" height="16" rx="3" /><path d="M8.5 12.5l2.5 2.5 4.5-5" /></>,
     etincelle: <path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8" />,
   };

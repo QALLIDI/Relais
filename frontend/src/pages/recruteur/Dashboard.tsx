@@ -112,14 +112,14 @@ export default function Dashboard() {
               : activites.length === 0 ? <div className="bloc-corps"><Vide>Rien de nouveau sur cette période.</Vide></div>
               : (
                 <div className="table-wrap">
-                  <table style={{ minWidth: 640 }}>
-                    <thead><tr><th>Activité</th><th>Mission</th><th>Par</th><th className="num">Quand</th></tr></thead>
+                  <table className="activites-table">
+                    <thead><tr><th>Activité</th><th className="col-secondaire">Mission</th><th className="col-secondaire">Par</th><th className="num">Quand</th></tr></thead>
                     <tbody>
                       {activites.map((a) => (
                         <tr key={a.id}>
-                          <td><div className="personne" style={{ gap: 10 }}><span className="mono-av" aria-hidden="true">{a.initiales}</span>{a.texte}</div></td>
-                          <td className="muted">{a.mission}</td>
-                          <td className="muted">{a.par}</td>
+                          <td><div className="personne" style={{ gap: 10 }}><span className="mono-av" aria-hidden="true">{a.initiales}</span><span style={{ minWidth: 0 }}>{a.texte}<span className="muted small activite-mission">{a.mission}</span></span></div></td>
+                          <td className="muted col-secondaire">{a.mission}</td>
+                          <td className="muted col-secondaire">{a.par}</td>
                           <td className="num muted">{ilYa(a.quand, maintenant)}</td>
                         </tr>
                       ))}

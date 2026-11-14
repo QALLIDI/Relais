@@ -58,6 +58,14 @@ public class NotificationController {
         n.setLu(true);
     }
 
+    /** Marque toutes les notifications de l'utilisateur comme lues. */
+    @PatchMapping("/lu")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    public void toutMarquerLu() {
+        notifications.marquerToutesLues(destinataire());
+    }
+
     /** Le recruteur reçoit les notifications adressées à l'adresse du cabinet ; les autres, à leur e-mail Keycloak. */
     private String destinataire() {
         return CurrentUser.hasRole(Roles.RECRUTEUR) ? recruteur : CurrentUser.email();

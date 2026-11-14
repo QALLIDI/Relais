@@ -178,9 +178,11 @@ export default function FicheCandidat() {
           <section className="bloc">
             <div className="bloc-tete"><h2>Contact</h2></div>
             <div className="bloc-corps infos">
-              {c.email && <a href={`mailto:${c.email}`}>{c.email}</a>}
-              {c.telephone && <a href={`tel:${c.telephone.replace(/\s/g, '')}`}>{c.telephone}</a>}
-              <span className="muted">{[c.mobilite ? `Mobilité : ${c.mobilite}` : null, c.langues ? `Langues : ${c.langues}` : null].filter(Boolean).join(' · ') || 'Aucune précision'}</span>
+              {c.email && <a className="contact-lien" href={`mailto:${c.email}`}><Icone nom="mail" taille={16} />{c.email}</a>}
+              {c.telephone && <a className="contact-lien" href={`tel:${c.telephone.replace(/\s/g, '')}`}><Icone nom="telephone" taille={16} />{c.telephone}</a>}
+              {(c.mobilite || c.langues)
+                ? <span className="muted small">{[c.mobilite ? `Mobilité : ${c.mobilite}` : null, c.langues ? `Langues : ${c.langues}` : null].filter(Boolean).join(' · ')}</span>
+                : <span className="muted small">Mobilité et langues non renseignées.</span>}
             </div>
           </section>
           <section className="bloc">

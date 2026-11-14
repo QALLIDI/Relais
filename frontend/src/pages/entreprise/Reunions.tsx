@@ -5,7 +5,7 @@ import { api, messageErreur, telecharger } from '../../api/client';
 import { initiales } from '../../api/format';
 import { avisAttendu, fmtHeure, fmtJour, libelleStatutReunion, memeJour, plage, repere, toneStatutReunion, useReunions } from '../../api/reunions';
 import type { PlageDisponibilite, Reunion } from '../../api/types';
-import { Chargement, Erreur, Kpi, Modal, Pill, Vide } from '../../components/ui';
+import { Chargement, Erreur, Modal, Pill, TetePage, Vide } from '../../components/ui';
 import { versFenetre } from '../../components/Fenetre';
 
 const JOURS = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.'];
@@ -29,14 +29,11 @@ export default function Reunions() {
 
   return (
     <div className="page">
-      <section className="header">
-        <h1>Entretiens</h1>
-        <div className="kpis">
-          <Kpi label="À venir" value={aVenir.length} />
-          <Kpi label="En attente du candidat" value={enAttente.length} />
-          <Kpi label="Avis à donner" value={avis.length} note={avis.length ? 'action requise' : undefined} tone={avis.length ? 'warn' : undefined} />
-        </div>
-      </section>
+      <TetePage titre="Entretiens" sous={
+        avis.length ? `${avis.length} avis à donner après entretien · ${aVenir.length} à venir`
+          : aVenir.length ? `${aVenir.length} entretien${aVenir.length > 1 ? 's' : ''} à venir${enAttente.length ? ` · ${enAttente.length} en attente du candidat` : ''}`
+            : enAttente.length ? `${enAttente.length} en attente de confirmation du candidat` : 'Vos entretiens avec les candidats présentés.'
+      } />
       {reunions.isLoading && <Chargement />}
       {reunions.error && <Erreur message={messageErreur(reunions.error)} />}
 
@@ -68,7 +65,11 @@ export default function Reunions() {
                 <button type="button" className="btn small" style={{ background: 'rgba(127,127,127,0.2)', color: 'inherit' }} onClick={() => setReport(prochain)}>Demander un report</button>
               </div>
             </div>
-          ) : !reunions.isLoading && <section className="card"><Vide>Aucun entretien confirmé pour le moment.</Vide></section>}
+          ) : !reunions.isLoading && liste.length === 0 && (
+            <section className="card stack" style={{ gap: 10 }}>
+              <Vide>Aucun entretien pour le moment. Ils apparaissent ici dès que vous proposez un entretien depuis une shortlist.</Vide>
+            </section>
+          )}
 
           <div className="card stack" style={{ gap: 10 }}>
             <h2>Planning</h2>

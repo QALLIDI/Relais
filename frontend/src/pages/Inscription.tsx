@@ -198,9 +198,9 @@ function EtapeType({ type, setType, onOk, onErreur }: Props & { type: TypeCompte
     }
   };
 
-  const choix = (t: TypeCompte, titre: string, sous: string, symbole: string) => (
+  const choix = (t: TypeCompte, titre: string, sous: string, icone: 'profil' | 'immeuble') => (
     <button type="button" role="radio" aria-checked={type === t} onClick={() => setType(t)}>
-      <span style={{ fontSize: 26 }} aria-hidden="true">{symbole}</span>
+      <span className="choix-icone" aria-hidden="true"><Icone nom={icone} taille={20} /></span>
       <span className="t">{titre}</span>
       <span className="s">{sous}</span>
     </button>
@@ -213,8 +213,8 @@ function EtapeType({ type, setType, onOk, onErreur }: Props & { type: TypeCompte
         <p className="intro">Choisissez le type de compte, puis saisissez votre e-mail.</p>
       </div>
       <div role="radiogroup" aria-label="Type de compte" className="choix-type">
-        {choix('CANDIDAT', 'Candidat', 'Je cherche un poste', '◎')}
-        {choix('ENTREPRISE', 'Entreprise', 'Je recrute', '▣')}
+        {choix('CANDIDAT', 'Candidat', 'Je cherche un poste', 'profil')}
+        {choix('ENTREPRISE', 'Entreprise', 'Je recrute', 'immeuble')}
       </div>
       <div className="form-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
         <label className="field">Prénom<input required autoComplete="given-name" maxLength={100} value={prenom} onChange={(e) => setPrenom(e.target.value)} /></label>

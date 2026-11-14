@@ -89,9 +89,9 @@ export default function CandidatAccueil() {
             </div>
             <Link to={`/candidat/reunions/${r.id}`} className="titre-entretien">{r.nature === 'ENTRETIEN_CLIENT' && r.entrepriseNom ? <>{r.entrepriseNom}<br /></> : null}{r.missionIntitule}</Link>
             <span className="small muted">{premier ? `${libelleCreneau(premier).split(' · ')[1]} · ` : ''}{r.natureLibelle} · {r.type === 'PRESENTIEL' ? `sur site${r.lieu ? `, ${r.lieu}` : ''}` : r.typeLibelle.toLowerCase()}{r.creneaux.length > 1 ? ` · ${r.creneaux.length} créneaux proposés` : ''}</span>
-            <div className="deux-boutons" style={{ gridTemplateColumns: '1fr 1fr' }}>
-              <button type="button" className="btn" disabled={!premier} onClick={() => premier && setFeuille({ type: 'confirmer', r, creneau: premier })}>Confirmer</button>
-              <button type="button" className="btn primary" onClick={() => setFeuille({ type: 'creneau', r })}>Autre créneau</button>
+            <div className="deux-boutons" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))' }}>
+              <button type="button" className="btn primary" disabled={!premier} onClick={() => premier && setFeuille({ type: 'confirmer', r, creneau: premier })}>Confirmer ce créneau</button>
+              <button type="button" className="btn" onClick={() => setFeuille({ type: 'creneau', r })}>Autre créneau</button>
             </div>
           </section>
         );

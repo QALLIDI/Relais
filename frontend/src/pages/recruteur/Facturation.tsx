@@ -69,23 +69,42 @@ export default function Facturation() {
           </div>
           {factures.isLoading && <Chargement />}
           {liste.length === 0 && !factures.isLoading && <Vide>Aucune facture.</Vide>}
-          {liste.map((f) => (
-            <div key={f.id} className="tile">
-              <span className={`avatar sq ${ICONES[f.statut]}`} style={{ width: 44, height: 44, flexBasis: 44, borderRadius: 14, fontSize: 12 }} aria-hidden="true">{initiales(f.entrepriseNom)}</span>
-              <div style={{ flex: '1 1 220px', minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{f.entrepriseNom}</div>
-                <div className="muted small">{f.numero ?? 'Brouillon'} · {f.objet}</div>
-              </div>
-              <span className="muted small" style={{ width: 110 }}>{f.echeance ? `Échéance ${dateCourte(f.echeance)}` : '—'}</span>
-              <span className="mono" style={{ fontSize: 20, fontWeight: 500, minWidth: 92, textAlign: 'right' }}>{n(f.montantHt)}</span>
-              <span style={{ width: 86, textAlign: 'center' }}><Pill tone={toneFacture(f.statut)}>{libelleStatutFacture[f.statut]}</Pill></span>
-              <div className="actions" style={{ gap: 4, flexWrap: 'nowrap', minWidth: 180, justifyContent: 'flex-end' }}>
-                {f.statut === 'BROUILLON' && <button className="btn small accent" onClick={() => action.mutate({ id: f.id, verbe: 'emettre' })}>Émettre</button>}
-                {(f.statut === 'EMISE' || f.statut === 'EN_RETARD') && <button className="btn small" style={{ background: 'var(--surface)' }} onClick={() => action.mutate({ id: f.id, verbe: 'payer' })}>Marquer payée</button>}
-                {f.statut !== 'BROUILLON' && <button className="btn small" style={{ background: 'var(--surface)' }} onClick={() => telecharger(`/api/factures/${f.id}/pdf`, 'facture.pdf')}>PDF</button>}
-              </div>
+          {liste.length > 0 && (
+            <div className="table-wrap">
+              <table className="fact-table">
+                <thead><tr><th>Client et objet</th><th>Échéance</th><th className="num">Montant HT</th><th>Statut</th><th><span className="sr-only">Actions</span></th></tr></thead>
+                <tbody>
+                  {liste.map((f) => (
+                    <tr key={f.id}>
+                      <td>
+                        <div className="personne" style={{ gap: 10 }}>
+                          <span className={`avatar sq ${ICONES[f.statut]}`} style={{ width: 38, height: 38, flexBasis: 38, borderRadius: 12, fontSize: 12 }} aria-hidden="true">{initiales(f.entrepriseNom)}</span>
+                          <span style={{ minWidth: 0 }}>
+                            <b style={{ display: 'block', fontWeight: 500 }}>{f.entrepriseNom}</b>
+                            <span className="muted small">{f.numero ?? 'Brouillon'} · {f.objet}</span>
+                          </span>
+                        </div>
+                      </td>
+                      <td className="muted" style={{ whiteSpace: 'nowrap' }}>{f.echeance ? dateCourte(f.echeance) : '—'}</td>
+                      <td className="num mono" style={{ fontSize: 15, fontWeight: 500, whiteSpace: 'nowrap' }}>{n(f.montantHt)}</td>
+                      <td><Pill tone={toneFacture(f.statut)}>{libelleStatutFacture[f.statut]}</Pill></td>
+                      <td>
+                        <div className="fact-actions">
+                          {f.statut === 'BROUILLON' && <button className="btn small primary" onClick={() => action.mutate({ id: f.id, verbe: 'emettre' })}>Émettre</button>}
+                          {(f.statut === 'EMISE' || f.statut === 'EN_RETARD') && <button className="btn small" onClick={() => action.mutate({ id: f.id, verbe: 'payer' })}>Marquer payée</button>}
+                          {f.statut !== 'BROUILLON' && (
+                            <button className="ico petit" aria-label={`Télécharger la facture ${f.numero ?? ''} en PDF`} title="Télécharger le PDF" onClick={() => telecharger(`/api/factures/${f.id}/pdf`, `${f.numero ?? 'facture'}.pdf`)}>
+                              <Icone nom="facture" taille={16} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
+          )}
         </section>
 
         <aside className="stack grow-side" style={{ gap: 16 }} aria-label="Placements">
