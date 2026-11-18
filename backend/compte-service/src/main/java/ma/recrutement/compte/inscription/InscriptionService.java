@@ -76,6 +76,12 @@ public class InscriptionService {
             throw new InscriptionException(HttpStatus.CONFLICT, "Votre numéro est déjà vérifié.");
         }
         String telephone = Telephones.normaliser(req.telephone());
+        // Seuls les pays prévus reçoivent un SMS : évite qu'un robot fasse envoyer des SMS surtaxés à l'étranger.
+        String pays = Telephones.pays(telephone);
+        if (pays == null || !props.inscription().paysSms().contains(pays)) {
+            throw new InscriptionException(HttpStatus.BAD_REQUEST,
+                    "Ce numéro n'est pas accepté pour l'inscription. Saisissez un numéro marocain (+212).");
+        }
         if (comptes.telephoneDejaUtilise(telephone, i.userId())) {
             throw new InscriptionException(HttpStatus.CONFLICT, "Ce numéro est déjà associé à un compte.");
         }
@@ -166,6 +172,12 @@ public class InscriptionService {
         if (quota > 0) {
             throw new InscriptionException(HttpStatus.TOO_MANY_REQUESTS,
                     "Trop de codes envoyés à ce numéro. Réessayez dans %d min.".formatted((quota + 59) / 60), quota);
+        }
+        if (store.plafondSmsDuJourAtteint()) {
+            log.error("Plafond quotidien de SMS atteint ({}) : envoi refusé pour l'inscription {}",
+                    props.inscription().smsParJour(), i.id());
+            throw new InscriptionException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "L'envoi de SMS est momentanément indisponible. Réessayez dans quelques heures.");
         }
         String code = "%06d".formatted(aleatoire.nextInt(1_000_000));
         store.enregistrerCode(i.id(), code);

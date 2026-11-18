@@ -1,5 +1,6 @@
 server:
-  port: 8087
+  # Railway fournit PORT ; en local, le port fixe du service.
+  port: ${PORT:8087}
 
 spring:
   application:

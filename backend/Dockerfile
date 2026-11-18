@@ -9,7 +9,7 @@ RUN --mount=type=cache,target=/root/.m2 \
 
 FROM eclipse-temurin:21-jre
 ARG SERVICE
-RUN useradd --system --uid 1001 app
+RUN useradd --system --uid 1001 app && mkdir -p /data/cv && chown app /data/cv
 WORKDIR /app
 COPY --from=build /src/${SERVICE}/target/${SERVICE}.jar app.jar
 USER app

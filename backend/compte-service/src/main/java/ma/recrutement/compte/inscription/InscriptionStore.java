@@ -21,7 +21,8 @@ import org.springframework.stereotype.Component;
  *   <li>{@code inscription:<id>} : l'inscription (hash), 48 h ;</li>
  *   <li>{@code inscription:<id>:code} : code SMS haché (HMAC-SHA256) et nombre d'essais, 10 min ;</li>
  *   <li>{@code inscription:<id>:renvoi} et {@code :renvoi-email} : délai de 60 s entre deux envois ;</li>
- *   <li>{@code sms:<numéro>} : codes envoyés à ce numéro dans l'heure.</li>
+ *   <li>{@code sms:<numéro>} : codes envoyés à ce numéro dans l'heure ;</li>
+ *   <li>{@code sms:jour:<date>} : codes envoyés ce jour-là (plafond contre l'envoi massif par un robot).</li>
  * </ul>
  */
 @Component
@@ -141,6 +142,20 @@ public class InscriptionStore {
             redis.expire(k, Duration.ofHours(1));
         }
         return 0;
+    }
+
+    /**
+     * Compte un envoi dans le plafond du jour (toutes inscriptions confondues).
+     *
+     * @return {@code true} si le plafond est déjà atteint : l'envoi ne doit pas partir
+     */
+    public boolean plafondSmsDuJourAtteint() {
+        String k = "sms:jour:" + java.time.LocalDate.now(java.time.ZoneOffset.UTC);
+        Long total = redis.opsForValue().increment(k);
+        if (total != null && total == 1) {
+            redis.expire(k, Duration.ofDays(2));
+        }
+        return total != null && total > regles.smsParJour();
     }
 
     /** Verrou simple pour qu'une tâche planifiée ne tourne que sur une instance à la fois. */

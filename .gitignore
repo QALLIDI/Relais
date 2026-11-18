@@ -5,3 +5,5 @@
 .idea/
 *.iml
 .vscode/
+# CV et autres fichiers déposés en local
+data/

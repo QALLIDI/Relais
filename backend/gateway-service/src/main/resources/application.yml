@@ -1,5 +1,9 @@
 server:
-  port: 8080
+  # Railway fournit PORT ; en local, le port fixe du service.
+  port: ${PORT:8080}
+  # Derrière le proxy de Railway : l'adresse du visiteur vient de X-Forwarded-For,
+  # sinon tous les anonymes partageraient le même quota de requêtes (celui du proxy).
+  forward-headers-strategy: framework
 
 spring:
   application:
@@ -8,6 +12,8 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      # Vide en local ; Railway Redis demande un mot de passe (variable REDISPASSWORD du service Redis).
+      password: ${REDIS_PASSWORD:}
   security:
     oauth2:
       resourceserver:

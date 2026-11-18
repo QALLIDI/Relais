@@ -26,7 +26,6 @@ Le premier build télécharge les dépendances Maven et npm (10 à 15 minutes). 
 | Keycloak (console) | http://localhost:8180 | admin / admin |
 | Mailpit (e-mails envoyés) | http://localhost:8025 | — |
 | Kafka UI (topics, messages, retard des consommateurs) | http://localhost:8090 | — |
-| MinIO (console) | http://localhost:9001 | recrutement / recrutement123 |
 | Gateway (API) | http://localhost:8080/api/... | jeton Keycloak |
 
 ### Comptes de test (realm `recrutement`)
@@ -52,7 +51,7 @@ Candidats et entreprises créent leur compte sur http://localhost:3000/inscripti
 Lancer seulement l'infrastructure, puis un service depuis l'IDE :
 
 ```bash
-docker compose up -d postgres kafka redis keycloak minio mailpit
+docker compose up -d postgres kafka redis keycloak mailpit
 cd backend && mvn -pl candidat-service -am spring-boot:run
 cd frontend && npm install && npm run dev      # http://localhost:5173
 ```
@@ -67,7 +66,7 @@ Tests unitaires (calcul du score de matching, honoraires et TVA) : `cd backend &
 | --- | --- | --- | --- |
 | gateway-service | 8080 | Routage, vérification du JWT, CORS | — |
 | entreprise-service | 8082 | Entreprises, contacts, missions | entreprise_db |
-| candidat-service | 8083 | Vivier, CV (MinIO), recherche, regroupements, RGPD | candidat_db |
+| candidat-service | 8083 | Vivier, CV (dossier local data/cv), recherche, regroupements, RGPD | candidat_db |
 | selection-service | 8084 | Pipeline, matching, shortlists, avis client, statistiques | selection_db |
 | agenda-service | 8087 | Réunions : créneaux, disponibilités du client, confirmation, lien visio, invitation `.ics`, rappels, évaluation après entretien | agenda_db |
 | facturation-service | 8085 | Placements, factures, PDF | facturation_db |

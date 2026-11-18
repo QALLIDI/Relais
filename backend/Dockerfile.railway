@@ -1,0 +1,18 @@
+# Image d'un service pour Railway : comme Dockerfile, mais sans cache de build partagé
+# (Railway exige un identifiant de cache propre à chaque service). La variable SERVICE
+# du service Railway (ex. candidat-service) est transmise comme argument de build.
+FROM maven:3.9-eclipse-temurin-21 AS build
+ARG SERVICE
+WORKDIR /src
+COPY . .
+RUN test -n "$SERVICE" || (echo "Variable SERVICE manquante sur le service Railway" && exit 1)
+RUN mvn -B -q -pl ${SERVICE} -am package -DskipTests
+
+FROM eclipse-temurin:21-jre
+ARG SERVICE
+RUN useradd --system --uid 1001 app && mkdir -p /data/cv && chown app /data/cv
+WORKDIR /app
+COPY --from=build /src/${SERVICE}/target/${SERVICE}.jar app.jar
+USER app
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75"
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

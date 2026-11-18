@@ -1,5 +1,6 @@
 server:
-  port: 8083
+  # Railway fournit PORT ; en local, le port fixe du service.
+  port: ${PORT:8083}
 
 spring:
   application:
@@ -30,11 +31,9 @@ spring:
           issuer-uri: ${KEYCLOAK_PUBLIC_URL:http://localhost:8180}/realms/recrutement
 
 app:
-  minio:
-    url: ${MINIO_URL:http://localhost:9000}
-    access-key: ${MINIO_ACCESS_KEY:recrutement}
-    secret-key: ${MINIO_SECRET_KEY:recrutement123}
-    bucket: cv
+  cv:
+    # Dossier des CV. En Docker : /data/cv, monté sur CV_DIR (voir .env).
+    dossier: ${CV_STORAGE_DIR:${user.home}/recrut-data/cv}
 
 management:
   endpoints:

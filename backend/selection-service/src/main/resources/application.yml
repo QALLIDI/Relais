@@ -1,5 +1,6 @@
 server:
-  port: 8084
+  # Railway fournit PORT ; en local, le port fixe du service.
+  port: ${PORT:8084}
 
 spring:
   application:

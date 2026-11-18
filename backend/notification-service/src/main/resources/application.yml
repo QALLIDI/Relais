@@ -1,5 +1,6 @@
 server:
-  port: 8086
+  # Railway fournit PORT ; en local, le port fixe du service.
+  port: ${PORT:8086}
 
 spring:
   application:
@@ -21,6 +22,15 @@ spring:
   mail:
     host: ${SMTP_HOST:localhost}
     port: ${SMTP_PORT:1025}
+    # Vides en local (Mailpit) ; en production, le compte du serveur SMTP.
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${SMTP_STARTTLS:false}
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
   security:
     oauth2:
       resourceserver:
@@ -34,8 +44,13 @@ app:
   mail:
     from: ${MAIL_FROM:plateforme@recrutement.local}
   sms:
-    # console : le SMS est écrit dans les logs et dans Mailpit. Un vrai fournisseur se branche ici.
+    # console : le SMS est écrit dans les logs et dans Mailpit. zavu : envoi réel par l'API Zavu.
     provider: ${SMS_PROVIDER:console}
+    zavu:
+      url: ${ZAVU_URL:https://api.zavu.dev}
+      api-key: ${ZAVU_API_KEY:}
+      # Identifiant d'expéditeur Zavu (snd_…), facultatif : sinon l'expéditeur par défaut du compte.
+      sender: ${ZAVU_SENDER:}
 
 management:
   endpoints:

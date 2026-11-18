@@ -1,65 +1,97 @@
 package ma.recrutement.candidat.service;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
-import io.minio.BucketExistsArgs;
-import io.minio.GetObjectArgs;
-import io.minio.MakeBucketArgs;
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
-import io.minio.RemoveObjectArgs;
-import lombok.RequiredArgsConstructor;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Stockage des CV dans MinIO (compatible S3). Le bucket est créé au premier envoi.
+ * Stockage des CV dans un dossier du disque (remplace MinIO).
+ *
+ * <p>Chaque CV est rangé sous {@code <dossier>/<candidatId>/<uuid>-<nom>} ; la clé enregistrée en base
+ * ({@code cvObjectKey}) est ce chemin relatif, au même format qu'avec MinIO. En Docker, le dossier du
+ * conteneur est monté sur un dossier du PC (voir {@code CV_DIR} dans {@code .env}).</p>
  */
+@Slf4j
 @Component
-@RequiredArgsConstructor
 public class CvStorage {
 
-    private final MinioClient minio;
+    private final Path racine;
 
-    @Value("${app.minio.bucket:cv}")
-    private String bucket;
+    public CvStorage(@Value("${app.cv.dossier}") String dossier) {
+        this.racine = Path.of(dossier).toAbsolutePath().normalize();
+    }
+
+    @PostConstruct
+    void preparer() throws IOException {
+        Files.createDirectories(racine);
+        if (!Files.isWritable(racine)) {
+            throw new IllegalStateException("Dossier des CV non accessible en écriture : " + racine);
+        }
+        log.info("CV stockés dans {}", racine);
+    }
 
     public String enregistrer(UUID candidatId, MultipartFile fichier) {
+        String key = candidatId + "/" + UUID.randomUUID() + "-" + nettoyer(fichier.getOriginalFilename());
+        Path cible = resoudre(key);
         try {
-            if (!minio.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
-                minio.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
-            }
-            String key = candidatId + "/" + UUID.randomUUID() + "-" + nettoyer(fichier.getOriginalFilename());
+            Files.createDirectories(cible.getParent());
+            // Écriture dans un fichier temporaire puis renommage : jamais de CV à moitié écrit.
+            Path tmp = Files.createTempFile(cible.getParent(), ".envoi-", ".part");
             try (InputStream in = fichier.getInputStream()) {
-                minio.putObject(PutObjectArgs.builder()
-                        .bucket(bucket)
-                        .object(key)
-                        .stream(in, fichier.getSize(), -1)
-                        .contentType(fichier.getContentType())
-                        .build());
+                Files.copy(in, tmp, StandardCopyOption.REPLACE_EXISTING);
+                Files.move(tmp, cible, StandardCopyOption.ATOMIC_MOVE);
+            } finally {
+                Files.deleteIfExists(tmp);
             }
             return key;
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new IllegalStateException("Impossible d'enregistrer le CV", e);
         }
     }
 
     public InputStream lire(String key) {
         try {
-            return minio.getObject(GetObjectArgs.builder().bucket(bucket).object(key).build());
-        } catch (Exception e) {
+            return Files.newInputStream(resoudre(key));
+        } catch (NoSuchFileException e) {
             throw new IllegalStateException("CV introuvable dans le stockage", e);
+        } catch (IOException e) {
+            throw new IllegalStateException("Impossible de lire le CV", e);
         }
     }
 
     public void supprimer(String key) {
         try {
-            minio.removeObject(RemoveObjectArgs.builder().bucket(bucket).object(key).build());
-        } catch (Exception e) {
+            Path f = resoudre(key);
+            Files.deleteIfExists(f);
+            // Retire le dossier du candidat s'il est vide.
+            Path dossier = f.getParent();
+            if (!dossier.equals(racine)) {
+                try (var contenu = Files.list(dossier)) {
+                    if (contenu.findAny().isEmpty()) Files.deleteIfExists(dossier);
+                }
+            }
+        } catch (IOException e) {
             throw new IllegalStateException("Impossible de supprimer le CV", e);
         }
+    }
+
+    /** Chemin absolu d'une clé, en refusant toute sortie du dossier racine (« ../ »). */
+    private Path resoudre(String key) {
+        Path p = racine.resolve(key).normalize();
+        if (!p.startsWith(racine) || p.equals(racine)) {
+            throw new IllegalArgumentException("Clé de CV invalide");
+        }
+        return p;
     }
 
     private static String nettoyer(String nom) {

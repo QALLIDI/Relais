@@ -26,6 +26,15 @@ final class Telephones {
         }
     }
 
+    /** Pays (code ISO) du numéro E.164, ou {@code null} s'il est inconnu. */
+    static String pays(String e164) {
+        try {
+            return UTIL.getRegionCodeForNumber(UTIL.parse(e164, null));
+        } catch (NumberParseException e) {
+            return null;
+        }
+    }
+
     /** +212 6•• •• •• 42 : indicatif, premier chiffre et deux derniers chiffres. */
     static String masquer(String e164) {
         if (e164 == null) {

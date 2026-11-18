@@ -1,6 +1,7 @@
 package ma.recrutement.compte.config;
 
 import java.time.Duration;
+import java.util.List;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -22,8 +23,11 @@ public record CompteProperties(String frontUrl, Keycloak keycloak, Inscription i
      * @param envoisParHeure  codes envoyés au même numéro en une heure
      * @param dureeInscription durée de vie d'une inscription non terminée
      * @param dureeLienEmail  validité du lien d'activation
+     * @param paysSms         pays (codes ISO, ex. MA) dont les numéros peuvent recevoir un code SMS
+     * @param smsParJour      plafond de codes SMS envoyés par jour, toutes inscriptions confondues
      */
     public record Inscription(String secret, Duration dureeCode, int essaisMax, Duration delaiRenvoi,
-                              int envoisParHeure, Duration dureeInscription, Duration dureeLienEmail) {
+                              int envoisParHeure, Duration dureeInscription, Duration dureeLienEmail,
+                              List<String> paysSms, int smsParJour) {
     }
 }

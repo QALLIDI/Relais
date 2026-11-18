@@ -1,5 +1,6 @@
 server:
-  port: 8088
+  # Railway fournit PORT ; en local, le port fixe du service.
+  port: ${PORT:8088}
 
 spring:
   application:
@@ -9,6 +10,8 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      # Vide en local ; Railway Redis demande un mot de passe (variable REDISPASSWORD du service Redis).
+      password: ${REDIS_PASSWORD:}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9094}
     producer:
@@ -38,6 +41,10 @@ app:
     envois-par-heure: 5
     duree-inscription: 48h
     duree-lien-email: 24h
+    # Pays dont les numéros reçoivent un code (codes ISO, séparés par des virgules).
+    pays-sms: ${SMS_PAYS:MA}
+    # Plafond de codes par jour, toutes inscriptions confondues : coupe un envoi massif par un robot.
+    sms-par-jour: ${SMS_PAR_JOUR:300}
 
 management:
   endpoints:
