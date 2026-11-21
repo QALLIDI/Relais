@@ -243,6 +243,7 @@ export function RecruteurLayout() {
         { to: '/recruteur/vivier', label: 'Vivier', icone: 'groupe' },
         { to: '/recruteur/profils', label: 'Profils', icone: 'grille' },
         { to: '/recruteur/agenda', label: 'Agenda', icone: 'agenda' },
+        { to: '/recruteur/evaluations', label: 'Évaluations', icone: 'test' },
         { to: '/recruteur/messages', label: 'Messages', icone: 'bulle', compte: messages },
         { to: '/recruteur/facturation', label: 'Facturation', icone: 'facture' },
         { to: '/recruteur/statistiques', label: 'Statistiques', icone: 'stats' },
@@ -294,6 +295,7 @@ export function CandidatLayout() {
       titre: 'Menu principal',
       liens: [
         { to: '/candidat', label: 'Accueil', icone: 'maison', end: true },
+        { to: '/candidat/tests', label: 'Mes tests', court: 'Tests', icone: 'test' },
         { to: '/candidat/profil', label: 'Mon profil', icone: 'profil' },
         { to: '/candidat/donnees', label: 'Mes données', icone: 'coche' },
         { to: '/candidat/notifications', label: 'Alertes', icone: 'cloche' },

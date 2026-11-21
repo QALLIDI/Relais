@@ -32,6 +32,9 @@ import ReunionCandidat from './pages/candidat/Reunion';
 import MesDonnees from './pages/candidat/MesDonnees';
 import Messages from './pages/Messages';
 import ReserveAdmin from './pages/entreprise/ReserveAdmin';
+import Evaluations from './pages/recruteur/evaluations/Evaluations';
+import MesTests from './pages/candidat/MesTests';
+import PassageTest from './pages/candidat/PassageTest';
 
 export default function App() {
   const auth = useAuth();
@@ -91,6 +94,7 @@ export default function App() {
           <Route path="missions/:id" element={<PipelinePage />} />
           <Route path="pipeline" element={<PipelinePage />} />
           <Route path="candidatures/:id/qualification" element={<Qualification />} />
+          <Route path="evaluations" element={<Evaluations />} />
           <Route path="vivier" element={<Vivier />} />
           <Route path="vivier/nouveau" element={<NouveauCandidat />} />
           <Route path="vivier/:id" element={<FicheCandidat />} />
@@ -125,10 +129,13 @@ export default function App() {
           <Route index element={<CandidatAccueil />} />
           <Route path="profil" element={<MonProfil />} />
           <Route path="donnees" element={<MesDonnees />} />
+          <Route path="tests" element={<MesTests />} />
           <Route path="reunions/:id" element={<ReunionCandidat />} />
           <Route path="notifications" element={<div className="page narrow"><Notifications /></div>} />
         </Route>
       )}
+      {/* Passage d'un test : plein écran, sans menu, pour rester concentré. */}
+      {session.roles.includes('CANDIDAT') && <Route path="/candidat/tests/:id" element={<PassageTest />} />}
       <Route path="*" element={<Navigate to={accueil} replace />} />
     </Routes>
   );
