@@ -1,5 +1,5 @@
 /**
- * Textes des pages légales, repris du document « Pages légales — modèles Recrut ».
+ * Textes des pages légales, repris du document « Pages légales — modèles Relais ».
  * MODÈLES À FAIRE VALIDER PAR UN AVOCAT AVANT PUBLICATION (loi 09-08 / CNDP, loi 31-08, loi 53-05, Code du travail).
  * Les passages entre crochets [ … ] sont à compléter : ils sont surlignés à l'écran tant qu'ils restent.
  * Mise en forme : **gras** ; un paragraphe par chaîne.
@@ -21,15 +21,15 @@ export const PAGES_LEGALES: PageLegale[] = [
     slug: 'mentions-legales',
     titre: 'Mentions légales',
     court: 'Mentions légales',
-    resume: 'Qui édite Recrut, comment nous joindre et où le site est hébergé.',
+    resume: 'Qui édite Relais, comment nous joindre et où le site est hébergé.',
     blocs: [
-      { t: 'p', x: "**Éditeur.** Le site recrut.ma et la plateforme Recrut sont édités par [Raison sociale], [forme juridique] au capital de [capital] dirhams, dont le siège est situé [adresse du siège], Casablanca, Maroc." },
+      { t: 'p', x: "**Éditeur.** Le site relais.ma et la plateforme Relais sont édités par [Raison sociale], [forme juridique] au capital de [capital] dirhams, dont le siège est situé [adresse du siège], Casablanca, Maroc." },
       { t: 'p', x: '**Identifiants.** RC [RC] · ICE [ICE] · IF [IF] · Patente [patente].' },
       { t: 'p', x: "**Activité.** Cabinet de présélection et de recrutement exerçant en qualité d'agence de recrutement privée, agréée sous le numéro [numéro d'agrément]. Conformément au Code du travail, aucun frais n'est demandé aux candidats." },
       { t: 'p', x: '**Directeur de la publication.** [Nom, qualité].' },
       { t: 'p', x: '**Contact.** [e-mail de contact] · [téléphone].' },
       { t: 'p', x: '**Hébergement.** [Hébergeur, adresse et pays]. Contenus distribués via Cloudflare, Inc. (réseau mondial).' },
-      { t: 'p', x: "**Propriété intellectuelle.** Le nom Recrut, le logo, les textes et la plateforme sont protégés. Toute reproduction sans autorisation écrite est interdite. La police Inter est utilisée sous licence SIL Open Font License." },
+      { t: 'p', x: "**Propriété intellectuelle.** Le nom Relais, le logo, les textes et la plateforme sont protégés. Toute reproduction sans autorisation écrite est interdite. La police Inter est utilisée sous licence SIL Open Font License." },
     ],
   },
   {
@@ -39,7 +39,7 @@ export const PAGES_LEGALES: PageLegale[] = [
     resume: 'Quelles données nous traitons, pourquoi, combien de temps, et comment exercer vos droits.',
     maj: MAJ,
     blocs: [
-      { t: 'p', x: "[Raison sociale] (« Recrut », « nous ») est responsable des traitements de données personnelles réalisés sur la plateforme. Ces traitements sont déclarés à la Commission nationale de contrôle de la protection des données à caractère personnel (CNDP) sous le numéro [numéro de déclaration CNDP], conformément à la loi 09-08." },
+      { t: 'p', x: "[Raison sociale] (« Relais », « nous ») est responsable des traitements de données personnelles réalisés sur la plateforme. Ces traitements sont déclarés à la Commission nationale de contrôle de la protection des données à caractère personnel (CNDP) sous le numéro [numéro de déclaration CNDP], conformément à la loi 09-08." },
       { t: 'h', x: 'Pourquoi nous traitons vos données' },
       { t: 'table', tete: ['Personnes', 'Finalité', 'Base'], lignes: [
         ['Candidats', "Créer votre profil, vous proposer des missions, organiser vos entretiens, vous informer de l'avancement", "Votre consentement, donné à l'inscription et modifiable à tout moment"],
@@ -58,7 +58,7 @@ export const PAGES_LEGALES: PageLegale[] = [
       { t: 'p', x: "Nous ne demandons jamais de photo, d'âge précis, de situation familiale, de numéro de carte d'identité, ni de donnée sensible (santé, religion, opinions)." },
       { t: 'h', x: 'Qui y a accès' },
       { t: 'ul', items: [
-        "L'équipe Recrut.",
+        "L'équipe Relais.",
         "Les entreprises clientes, uniquement pour les missions auxquelles vous participez, et seulement après votre accord. Si un recrutement est confidentiel, le nom de l'entreprise vous est révélé avant l'entretien.",
         "Nos sous-traitants techniques : hébergement, envoi d'e-mails et de SMS, agenda et visio, signature électronique, assistant de rédaction. Ils agissent sur nos instructions et sont tenus à la confidentialité.",
       ] },
@@ -82,7 +82,7 @@ export const PAGES_LEGALES: PageLegale[] = [
     resume: 'Les règles d’utilisation de la plateforme pour les candidats et les entreprises.',
     maj: MAJ,
     blocs: [
-      { t: 'p', x: "**Objet.** Les présentes conditions règlent l'utilisation de la plateforme Recrut par les candidats, les entreprises clientes et leurs équipes. Les entreprises sont en plus liées par le contrat de prestation signé en ligne, qui prévaut en cas de contradiction." },
+      { t: 'p', x: "**Objet.** Les présentes conditions règlent l'utilisation de la plateforme Relais par les candidats, les entreprises clientes et leurs équipes. Les entreprises sont en plus liées par le contrat de prestation signé en ligne, qui prévaut en cas de contradiction." },
       { t: 'p', x: "**Accès.** La plateforme est réservée aux personnes de 18 ans ou plus. L'inscription demande un e-mail valide, un numéro de téléphone vérifié par SMS et l'activation par e-mail. Chaque compte est personnel : vous êtes responsable de la confidentialité de vos identifiants." },
       { t: 'h', x: 'Engagements des candidats' },
       { t: 'ul', items: [
@@ -93,12 +93,12 @@ export const PAGES_LEGALES: PageLegale[] = [
       ] },
       { t: 'h', x: 'Engagements des entreprises' },
       { t: 'ul', items: [
-        "Les profils reçus sont confidentiels et ne servent qu'au recrutement concerné. Ils ne peuvent être ni copiés, ni transmis à un tiers, ni utilisés pour un autre poste sans passer par Recrut.",
-        'Un candidat présenté par Recrut et embauché dans les [12] mois suivant sa présentation donne lieu à facturation, conformément au contrat.',
+        "Les profils reçus sont confidentiels et ne servent qu'au recrutement concerné. Ils ne peuvent être ni copiés, ni transmis à un tiers, ni utilisés pour un autre poste sans passer par Relais.",
+        'Un candidat présenté par Relais et embauché dans les [12] mois suivant sa présentation donne lieu à facturation, conformément au contrat.',
         "L'administrateur du compte gère les accès de son équipe et reste responsable de leur usage.",
       ] },
       { t: 'p', x: "**Usages interdits.** Contenus faux, discriminatoires ou illégaux ; collecte automatisée des données ; contournement de la sécurité ; usurpation d'identité." },
-      { t: 'p', x: "**Disponibilité et responsabilité.** Nous faisons notre possible pour que la plateforme soit disponible et sûre, sans pouvoir garantir une absence totale d'interruption. Recrut accompagne la présélection ; la décision d'embauche appartient à l'entreprise." },
+      { t: 'p', x: "**Disponibilité et responsabilité.** Nous faisons notre possible pour que la plateforme soit disponible et sûre, sans pouvoir garantir une absence totale d'interruption. Relais accompagne la présélection ; la décision d'embauche appartient à l'entreprise." },
       { t: 'p', x: "**Suspension et fermeture.** Nous pouvons suspendre un compte en cas de manquement, après vous en avoir informé sauf urgence. Vous pouvez fermer votre compte à tout moment depuis la rubrique « Mes données »." },
       { t: 'p', x: "**Modification.** Toute modification importante vous est annoncée au moins 30 jours avant son entrée en vigueur." },
       { t: 'p', x: "**Droit applicable.** Droit marocain. À défaut d'accord amiable, compétence des tribunaux de Casablanca, sous réserve des règles protectrices du consommateur (loi 31-08)." },
@@ -115,7 +115,7 @@ export const PAGES_LEGALES: PageLegale[] = [
       { t: 'p', x: "**Acompte (formule forfait).** Un acompte de 30 % du forfait est facturé à l'ouverture de la mission. La recherche démarre à son paiement. L'acompte est déduit de la facture finale." },
       { t: 'p', x: "**Si vous annulez la mission.** [Règle à choisir, par exemple : avant l'envoi de la première shortlist, l'acompte est remboursé déduction faite de [montant] de frais de dossier ; après l'envoi d'une shortlist, il reste acquis.]" },
       { t: 'p', x: "**Si aucun profil ne vous convient.** [Règle à choisir, par exemple : nous poursuivons la recherche sans frais supplémentaires ; si aucun profil n'est retenu après [3] shortlists, l'acompte est remboursé intégralement.]" },
-      { t: 'p', x: "**Garantie de remplacement.** Si la personne recrutée quitte l'entreprise, ou si l'entreprise met fin à la période d'essai, dans un délai de [durée] après son arrivée, Recrut relance la recherche sans frais, sur les mêmes critères. La garantie ne s'applique pas en cas de licenciement économique, de modification importante du poste, ou de facture impayée. Elle se déclare depuis l'espace entreprise." },
+      { t: 'p', x: "**Garantie de remplacement.** Si la personne recrutée quitte l'entreprise, ou si l'entreprise met fin à la période d'essai, dans un délai de [durée] après son arrivée, Relais relance la recherche sans frais, sur les mêmes critères. La garantie ne s'applique pas en cas de licenciement économique, de modification importante du poste, ou de facture impayée. Elle se déclare depuis l'espace entreprise." },
       { t: 'p', x: "**Abonnement.** Sans engagement au-delà du mois en cours, résiliable avant la date de renouvellement ; le mois commencé reste dû." },
       { t: 'p', x: '**Réclamations.** À [e-mail de contact] ; réponse sous 15 jours ouvrés.' },
     ],

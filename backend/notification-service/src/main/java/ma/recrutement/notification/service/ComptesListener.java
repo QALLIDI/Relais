@@ -31,7 +31,7 @@ public class ComptesListener {
     }
 
     void codeSms(CodeSmsEvent e) {
-        sms.envoyer(e.telephone(), "Recrut : votre code de vérification est %s. Il expire dans %d minutes. Ne le communiquez à personne."
+        sms.envoyer(e.telephone(), "Relais : votre code de vérification est %s. Il expire dans %d minutes. Ne le communiquez à personne."
                 .formatted(e.code(), e.validiteMinutes()), "code-" + e.inscriptionId() + "-" + e.code());
     }
 }

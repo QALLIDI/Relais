@@ -13,7 +13,7 @@ public class VisioProviders {
     @Bean
     @ConditionalOnProperty(name = "app.visio.provider", havingValue = "fake", matchIfMissing = true)
     public VisioProvider fakeVisioProvider() {
-        return reunion -> "https://meet.jit.si/Recrut-" + reunion.getId().toString().substring(0, 8);
+        return reunion -> "https://meet.jit.si/Relais-" + reunion.getId().toString().substring(0, 8);
     }
 
     @Bean

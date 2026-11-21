@@ -1,4 +1,4 @@
-# Image Keycloak de production (Railway) : thème Recrut et realm intégrés, démarrage optimisé.
+# Image Keycloak de production (Railway) : thème Relais et realm intégrés, démarrage optimisé.
 # En local, docker-compose.yml garde l'image officielle en start-dev avec les fichiers montés.
 #
 # Variables à définir sur le service : KC_HOSTNAME (URL publique, https://…), KC_DB_URL,

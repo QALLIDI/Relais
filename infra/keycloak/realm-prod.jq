@@ -6,7 +6,7 @@
     "host": "${SMTP_HOST}",
     "port": "${SMTP_PORT}",
     "from": "${MAIL_FROM}",
-    "fromDisplayName": "Recrut",
+    "fromDisplayName": "Relais",
     "auth": "true",
     "user": "${SMTP_USERNAME}",
     "password": "${SMTP_PASSWORD}",

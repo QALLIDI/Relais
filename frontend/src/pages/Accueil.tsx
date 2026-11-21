@@ -51,9 +51,9 @@ export default function Accueil() {
     <div className="accueil" ref={racine}>
       <a href="#contenu" className="evitement">Aller au contenu</a>
       <header className="acc-entete">
-        <a href="/" className="acc-marque" aria-label="Recrut, accueil">
+        <a href="/" className="acc-marque" aria-label="Relais, accueil">
           <Logo taille={28} />
-          <b>Recrut</b>
+          <b>Relais</b>
         </a>
         <nav className="acc-nav" aria-label="Sections">
           <a href="#etapes">Comment ça marche</a>
@@ -248,7 +248,7 @@ export default function Accueil() {
       </main>
 
       <footer className="acc-pied">
-        <div className="ligne"><span className="acc-marque petit"><b>Recrut</b></span><span className="muted">Cabinet de présélection, Casablanca</span></div>
+        <div className="ligne"><span className="acc-marque petit"><b>Relais</b></span><span className="muted">Cabinet de présélection, Casablanca</span></div>
         <nav aria-label="Liens"><a href="#etapes">Comment ça marche</a><a href="#formules">Formules</a><a href="#questions">Questions</a>
           <button type="button" onClick={connexion}>Se connecter</button></nav>
         <nav aria-label="Informations légales" className="acc-legal">
@@ -283,7 +283,7 @@ function Contact() {
           <label>Entreprise<input required value={f.entreprise} onChange={(e) => setF({ ...f, entreprise: e.target.value })} placeholder="Nom de l'entreprise" /></label>
           <label>E-mail professionnel<input required type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="vous@entreprise.ma" /></label>
           <label>Poste à pourvoir<input value={f.poste} onChange={(e) => setF({ ...f, poste: e.target.value })} placeholder="Ex. : développeur Java senior" /></label>
-          <label className="accord"><input type="checkbox" required checked={f.accord} onChange={(e) => setF({ ...f, accord: e.target.checked })} />J'accepte que Recrut utilise ces informations pour me recontacter au sujet de mon besoin.</label>
+          <label className="accord"><input type="checkbox" required checked={f.accord} onChange={(e) => setF({ ...f, accord: e.target.checked })} />J'accepte que Relais utilise ces informations pour me recontacter au sujet de mon besoin.</label>
           <button type="submit" className="acc-btn plein grand">Être rappelé</button>
         </form>
       ) : (

@@ -57,12 +57,12 @@ function rendu(b: Bloc, k: number) {
 /** Pages légales publiques (/mentions-legales, /confidentialite, /cgu, /conditions-commerciales, /cookies). */
 export default function PageLegaleVue({ slug }: { slug: string }) {
   const page = pageLegale(slug) ?? PAGES_LEGALES[0];
-  useEffect(() => { document.title = `${page.titre} · Recrut`; window.scrollTo(0, 0); }, [page]);
+  useEffect(() => { document.title = `${page.titre} · Relais`; window.scrollTo(0, 0); }, [page]);
   return (
     <div className="leg">
       <a href="#leg-contenu" className="leg-evitement">Aller au contenu</a>
       <header className="leg-entete">
-        <a href="/" className="leg-marque" aria-label="Recrut, accueil"><Logo taille={28} /><b>Recrut</b></a>
+        <a href="/" className="leg-marque" aria-label="Relais, accueil"><Logo taille={28} /><b>Relais</b></a>
         <a href="/" className="btn small">Retour à l'accueil</a>
       </header>
       <div className="leg-corps">
@@ -81,7 +81,7 @@ export default function PageLegaleVue({ slug }: { slug: string }) {
         </main>
       </div>
       <footer className="leg-pied">
-        <span>© {new Date().getFullYear()} Recrut · Casablanca</span>
+        <span>© {new Date().getFullYear()} Relais · Casablanca</span>
         <nav aria-label="Liens légaux">
           {PAGES_LEGALES.map((p) => <a key={p.slug} href={`/${p.slug}`}>{p.court}</a>)}
           <button type="button" onClick={gererCookies}>Gérer les cookies</button>

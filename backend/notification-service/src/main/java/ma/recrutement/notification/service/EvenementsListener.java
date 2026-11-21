@@ -128,7 +128,7 @@ public class EvenementsListener {
             String texte = ("Bonjour%s, votre demande d'accès à l'espace entreprise%s n'a pas pu être validée. "
                     + "Si vous pensez qu'il s'agit d'une erreur, répondez à cet e-mail ou contactez votre recruteur.")
                     .formatted(prenom, e.entrepriseNom() == null ? "" : " pour " + e.entrepriseNom());
-            notifier.notifier(e.email(), Events.RATTACHEMENT_REFUSE, "Votre demande d'accès à Recrut", texte,
+            notifier.notifier(e.email(), Events.RATTACHEMENT_REFUSE, "Votre demande d'accès à Relais", texte,
                     new Mise("Votre demande d'accès",
                             List.of("Bonjour%s, votre demande d'accès à l'espace entreprise%s n'a pas pu être validée."
                                             .formatted(prenom, e.entrepriseNom() == null ? "" : " pour " + e.entrepriseNom()),
@@ -164,7 +164,7 @@ public class EvenementsListener {
 
     /** Demande de référence : le référent sait qui va l'appeler et pourquoi. */
     void referenceDemandee(ReferenceDemandeeEvent e) {
-        String texte = ("Bonjour %s, %s a donné votre nom comme référence pour un poste de %s. Votre recruteur Recrut vous contactera "
+        String texte = ("Bonjour %s, %s a donné votre nom comme référence pour un poste de %s. Votre recruteur Relais vous contactera "
                 + "dans les prochains jours pour un échange de 5 minutes. Vous pouvez aussi répondre directement à cet e-mail.")
                 .formatted(prenom(e.referentNom()), e.candidatNom(), e.missionIntitule());
         notifier.notifier(e.referentEmail(), Events.REFERENCE_DEMANDEE,

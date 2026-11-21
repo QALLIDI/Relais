@@ -44,7 +44,7 @@ public final class Invitations {
         evenement.add(annulation ? new Status(Status.VALUE_CANCELLED) : new Status(Status.VALUE_CONFIRMED));
 
         Calendar calendrier = new Calendar();
-        calendrier.add(new ProdId("-//Recrut//Agenda//FR"));
+        calendrier.add(new ProdId("-//Relais//Agenda//FR"));
         calendrier.add(ImmutableVersion.VERSION_2_0);
         calendrier.add(ImmutableCalScale.GREGORIAN);
         calendrier.add(new Method(annulation ? "CANCEL" : "REQUEST"));

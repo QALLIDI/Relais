@@ -64,7 +64,7 @@ public class Candidat {
     /** Rester dans le vivier du cabinet même sans être retenu pour une mission. */
     private boolean consentementVivier = true;
 
-    /** Recevoir les actualités de Recrut (un e-mail par mois au plus). */
+    /** Recevoir les actualités de Relais (un e-mail par mois au plus). */
     private boolean consentementActualites;
 
     private String cvObjectKey;
