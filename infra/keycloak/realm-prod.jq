@@ -13,6 +13,9 @@
     "starttls": "${SMTP_STARTTLS}",
     "ssl": "false"
   }
+# Pas de comptes de démonstration en production (mots de passe simples, refusés par la politique
+# de mots de passe) : seuls les comptes de service restent. Le premier recruteur se crée dans la console.
+| .users |= map(select(.serviceAccountClientId != null))
 # Pas de client Swagger en production.
 | .clients |= map(select(.clientId != "swagger"))
 | .clients |= map(
