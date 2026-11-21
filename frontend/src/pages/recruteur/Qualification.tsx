@@ -7,6 +7,7 @@ import type { Candidature, Etape, Mission, Suggestion } from '../../api/types';
 import { Annuler, Fenetre } from '../../components/Fenetre';
 import { useFilAriane } from '../../components/Layouts';
 import { Chargement, Erreur, Icone, Score, TetePage, Vide } from '../../components/ui';
+import { BlocEvaluations } from './evaluations/Resultat';
 
 interface Test { id: string; intitule: string; dureeMinutes?: number; lien?: string; message?: string; dateLimite?: string; statut: 'ENVOYE' | 'CORRIGE'; score?: number; commentaire?: string; envoyeLe: string; corrigeLe?: string }
 interface Reference { id: string; nom: string; email?: string; telephone?: string; fonction?: string; lien: 'MANAGER' | 'COLLEGUE' | 'CLIENT'; statut: 'DEMANDEE' | 'RECUE'; avis?: string; recommande?: boolean; demandeeLe: string; relanceeLe?: string; recueLe?: string }
@@ -26,6 +27,7 @@ export default function Qualification() {
   const qc = useQueryClient();
   const [fenetre, setFenetre] = useState<{ type: 'test' } | { type: 'correction'; test: Test } | { type: 'reference' } | { type: 'retour'; ref: Reference } | null>(null);
   const [message, setMessage] = useState('');
+  const [envoiEval, setEnvoiEval] = useState(false);
   const candidature = useQuery({ queryKey: ['candidature', id], queryFn: async () => (await api.get<Candidature>(`/api/candidatures/${id}`)).data });
   const qualif = useQuery({ queryKey: ['qualification', id], queryFn: async () => (await api.get<QualificationData>(`/api/candidatures/${id}/qualification`)).data });
   const c = candidature.data;
@@ -72,7 +74,7 @@ export default function Qualification() {
     <>
       <TetePage titre={c.candidatNom} sous={`Candidature · ${c.missionIntitule} · ${c.entrepriseNom}`}>
         <span className="etat-carte">Correspondance <b>{c.score} %</b></span>
-        <button type="button" className="btn" onClick={() => setFenetre({ type: 'test' })}>Envoyer un test</button>
+        <button type="button" className="btn" onClick={() => setEnvoiEval(true)}>Évaluer</button>
         {SHORTLISTABLES.includes(c.etape) && <button type="button" className="btn primary" disabled={shortlist.isPending} onClick={() => shortlist.mutate()}>Envoyer en shortlist</button>}
       </TetePage>
       {message && <div className="alert info" role="status">{message}</div>}
@@ -95,9 +97,10 @@ export default function Qualification() {
         </section>
 
         <div className="colonne-gauche">
+          <BlocEvaluations c={c} onMessage={(t) => { setMessage(t); rafraichir(); }} envoi={envoiEval} setEnvoi={setEnvoiEval} />
           <section className="bloc" aria-labelledby="test">
             <div className="bloc-tete">
-              <h2 id="test">Test technique</h2>
+              <h2 id="test">Tests externes</h2>
               {dernierCorrige && <span className="etat-carte">{dernierCorrige.intitule}{dernierCorrige.dureeMinutes ? ` · ${dernierCorrige.dureeMinutes} min` : ''}</span>}
             </div>
             <div className="bloc-corps">
@@ -108,7 +111,7 @@ export default function Qualification() {
                 </div>
               )}
               {dernierCorrige && <div className="barre" style={{ margin: '6px 0 10px' }}><div style={{ width: `${dernierCorrige.score}%` }} /></div>}
-              {qualif.data && tests.length === 0 && <Vide>Aucun test envoyé.</Vide>}
+              {qualif.data && tests.length === 0 && <Vide>Aucun test sur une plateforme externe.</Vide>}
               {tests.map((t) => (
                 <div key={t.id} className="ligne-test">
                   <span className="txt"><b>{t.intitule}</b><span>envoyé le {dateCourte(t.envoyeLe)}{t.dateLimite ? ` · à rendre avant le ${dateCourte(t.dateLimite)}` : ''}</span>
@@ -117,7 +120,7 @@ export default function Qualification() {
                     : <button type="button" className="btn small" onClick={() => setFenetre({ type: 'correction', test: t })}>Saisir le score</button>}
                 </div>
               ))}
-              <button type="button" className="lien-fleche" style={{ marginTop: 10 }} onClick={() => setFenetre({ type: 'test' })}><Icone nom="plus" taille={14} />Envoyer un test</button>
+              <button type="button" className="lien-fleche" style={{ marginTop: 10 }} onClick={() => setFenetre({ type: 'test' })}><Icone nom="plus" taille={14} />Envoyer un lien de test externe</button>
             </div>
           </section>
 

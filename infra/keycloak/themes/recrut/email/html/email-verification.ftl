@@ -9,7 +9,7 @@
 <div style="max-width:560px;margin:0 auto;padding:28px 16px">
   <div style="font-weight:600;font-size:16px;margin-bottom:14px">
     <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#E8622A;vertical-align:middle"></span>
-    <span style="vertical-align:middle">&nbsp;Recrut</span>
+    <span style="vertical-align:middle">&nbsp;Relais</span>
   </div>
 
   <div style="background:#FFFFFF;border:1px solid #ECEEF1;border-radius:16px;padding:28px">

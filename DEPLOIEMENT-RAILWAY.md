@@ -67,6 +67,7 @@ Les références `${{Service.VARIABLE}}` sont résolues par Railway. Mettez les 
 | `candidat-service` | `CV_STORAGE_DIR=/data/cv`, `RAILWAY_RUN_UID=0`, **volume** monté sur `/data/cv` |
 | `selection-service` | `ENTREPRISE_SERVICE_URL`, `CANDIDAT_SERVICE_URL` (adresses internes) |
 | `facturation-service` | `CABINET_NOM`, `CABINET_ADRESSE`, `CABINET_ICE` |
+| `selection-service` | `FRONT_URL` (lien « passer le test » envoyé au candidat) |
 | `notification-service` | `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_AUTH=true`, `SMTP_STARTTLS=true`, `MAIL_FROM`, `RECRUTEUR_EMAIL`, `SMS_PROVIDER=zavu`, `ZAVU_API_KEY`, `ZAVU_SENDER` (facultatif) |
 | `agenda-service` | `SELECTION_SERVICE_URL`, `RECRUTEUR_EMAIL`, `VISIO_PROVIDER` |
 | `compte-service` | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` (comme la gateway), `COMPTE_SERVICE_SECRET`, `INSCRIPTION_SECRET` (au moins 32 caractères au hasard), `SMS_PAYS=MA`, `SMS_PAR_JOUR=300` |
@@ -87,7 +88,7 @@ Les références `${{Service.VARIABLE}}` sont résolues par Railway. Mettez les 
 | `KAFKA_INTER_BROKER_LISTENER_NAME` | `PLAINTEXT` |
 | `KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR`, `KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR`, `KAFKA_TRANSACTION_STATE_LOG_MIN_ISR` | `1` |
 | `KAFKA_AUTO_CREATE_TOPICS_ENABLE` | `false` |
-| `KAFKA_LOG_DIRS` | `/var/lib/kafka/data` |
+| `KAFKA_LOG_DIRS` | `/var/lib/kafka/data/kafka-logs` (sous-dossier : la racine du volume contient `lost+found`, que Kafka refuse) |
 | `KAFKA_HEAP_OPTS` | `-Xms256m -Xmx512m` |
 | `RAILWAY_RUN_UID` | `0` (le volume est monté en root) |
 

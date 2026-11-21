@@ -34,6 +34,8 @@ spring:
             read-timeout: 5000
 
 app:
+  # Adresse du front, pour le lien « passer le test » envoyé au candidat.
+  front-url: ${FRONT_URL:http://localhost:3000}
   services:
     entreprise: ${ENTREPRISE_SERVICE_URL:http://localhost:8082}
     candidat: ${CANDIDAT_SERVICE_URL:http://localhost:8083}

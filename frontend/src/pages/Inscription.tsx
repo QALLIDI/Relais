@@ -109,7 +109,7 @@ export default function Inscription() {
       <aside className="signup-aside">
         <div className="brand">
           <Logo taille={24} />
-          Recrut
+          Relais
         </div>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <h1>Créez votre compte en 2 minutes.</h1>

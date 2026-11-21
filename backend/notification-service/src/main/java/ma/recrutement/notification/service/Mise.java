@@ -26,14 +26,14 @@ public record Mise(String surtitre, List<String> paragraphes, List<Info> infos, 
 
     /**
      * Mise en forme par défaut d'un message texte : un paragraphe par bloc, et le premier lien
-     * devient le bouton « Ouvrir dans Recrut » (il est retiré du texte).
+     * devient le bouton « Ouvrir dans Relais » (il est retiré du texte).
      */
     public static Mise depuisTexte(String message) {
         String texte = message == null ? "" : message;
         Action action = null;
         Matcher m = LIEN.matcher(texte);
         if (m.find()) {
-            action = new Action("Ouvrir dans Recrut", m.group(1));
+            action = new Action("Ouvrir dans Relais", m.group(1));
             texte = (texte.substring(0, m.start()) + m.group(2) + texte.substring(m.end())).trim();
             if (!texte.isEmpty() && !texte.matches("(?s).*[.!?]$")) {
                 texte = texte + ".";

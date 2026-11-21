@@ -117,7 +117,7 @@ function Cadre({ classe, espace, accueil, sous, groupes, notifications, recherch
       <div className={`app-frame ${replie ? 'replie' : ''} ${classe ?? ''}`}>
         <aside className="sidebar">
           <div className="brand-ligne">
-            <Link to={accueil} className="brand"><Logo /><b>Recrut</b></Link>
+            <Link to={accueil} className="brand"><Logo /><b>Relais</b></Link>
             <button type="button" className="ico petit replier" onClick={basculerMenu} aria-pressed={replie} aria-label={replie ? 'Déplier le menu' : 'Replier le menu'}>
               <Icone nom="panneau" taille={18} />
             </button>
@@ -142,10 +142,10 @@ function Cadre({ classe, espace, accueil, sous, groupes, notifications, recherch
         </aside>
         <div className="app-body">
           <header className="topbar">
-            <Link to={accueil} className="marque-mobile" aria-label="Recrut, accueil"><Logo taille={28} /></Link>
+            <Link to={accueil} className="marque-mobile" aria-label="Relais, accueil"><Logo taille={28} /></Link>
             <nav className="fil" aria-label="Fil d'Ariane">
               <ol>
-                <li><Link to={accueil}>Recrut</Link></li>
+                <li><Link to={accueil}>Relais</Link></li>
                 {miettes.map((m, i) => (
                   <li key={i} aria-current={i === miettes.length - 1 ? 'page' : undefined}>
                     <Icone nom="droite" taille={12} />
@@ -243,6 +243,7 @@ export function RecruteurLayout() {
         { to: '/recruteur/vivier', label: 'Vivier', icone: 'groupe' },
         { to: '/recruteur/profils', label: 'Profils', icone: 'grille' },
         { to: '/recruteur/agenda', label: 'Agenda', icone: 'agenda' },
+        { to: '/recruteur/evaluations', label: 'Évaluations', icone: 'test' },
         { to: '/recruteur/messages', label: 'Messages', icone: 'bulle', compte: messages },
         { to: '/recruteur/facturation', label: 'Facturation', icone: 'facture' },
         { to: '/recruteur/statistiques', label: 'Statistiques', icone: 'stats' },
@@ -294,6 +295,7 @@ export function CandidatLayout() {
       titre: 'Menu principal',
       liens: [
         { to: '/candidat', label: 'Accueil', icone: 'maison', end: true },
+        { to: '/candidat/tests', label: 'Mes tests', court: 'Tests', icone: 'test' },
         { to: '/candidat/profil', label: 'Mon profil', icone: 'profil' },
         { to: '/candidat/donnees', label: 'Mes données', icone: 'coche' },
         { to: '/candidat/notifications', label: 'Alertes', icone: 'cloche' },

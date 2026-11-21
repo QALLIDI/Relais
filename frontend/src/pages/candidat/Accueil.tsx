@@ -7,6 +7,8 @@ import { initiales } from '../../api/format';
 import { plage, useReunions } from '../../api/reunions';
 import type { Candidat, Creneau, MaCandidature, Reunion } from '../../api/types';
 import { FeuilleConfirmation, FeuilleCreneau, libelleCreneau } from './FeuillesReunion';
+import { useMesTests } from '../../api/evaluations';
+import { CarteTest } from './MesTests';
 import { Chargement, Progression, Vide } from '../../components/ui';
 
 function completude(c: Candidat): { pct: number; manque?: string } {
@@ -24,6 +26,7 @@ function completude(c: Candidat): { pct: number; manque?: string } {
 }
 
 export default function CandidatAccueil() {
+  const mesTests = useMesTests();
   const profil = useQuery({
     queryKey: ['candidat', 'me'],
     queryFn: async () => (await api.get<Candidat>('/api/candidats/me')).data,
@@ -49,6 +52,7 @@ export default function CandidatAccueil() {
   const c = profil.data;
   const comp = c ? completude(c) : null;
   const aConfirmer = reunions.data?.filter((r) => r.statut === 'PROPOSEE') ?? [];
+  const testsAPasser = (mesTests.data ?? []).filter((t) => t.statut === 'ENVOYEE' || t.statut === 'COMMENCEE');
   const confirmees = reunions.data?.filter((r) => r.statut === 'CONFIRMEE' && r.fin && new Date(r.fin) >= new Date()) ?? [];
   const arc = 2 * Math.PI * 16;
 
@@ -78,6 +82,8 @@ export default function CandidatAccueil() {
           </div>
         </section>
       )}
+
+      {testsAPasser.map((t) => <CarteTest key={t.id} t={t} />)}
 
       {aConfirmer.map((r) => {
         const premier = r.creneaux[0];

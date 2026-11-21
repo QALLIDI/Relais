@@ -1,4 +1,4 @@
-<#-- Gabarit commun des pages Keycloak de Recrut (connexion, mot de passe oublié, vérification d'e-mail…).
+<#-- Gabarit commun des pages Keycloak de Relais (connexion, mot de passe oublié, vérification d'e-mail…).
      Reprend base/login/template.ftl (Keycloak 26.4) : mêmes sections et scripts, mise en page à deux colonnes
      (panneau de marque à gauche, formulaire à droite), sans PatternFly. -->
 <#import "footer.ftl" as loginFooter>
@@ -18,7 +18,7 @@
         </#list>
     </#if>
     <meta name="color-scheme" content="light dark">
-    <title>${msg("loginTitle",(realm.displayName!'Recrut'))}</title>
+    <title>${msg("loginTitle",(realm.displayName!'Relais'))}</title>
     <link rel="icon" type="image/svg+xml" href="${url.resourcesPath}/img/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -85,7 +85,7 @@
 <div class="${properties.kcLoginClass!}">
 
     <aside class="kc-panneau" aria-hidden="true">
-        <div class="kc-marque"><@logo taille=34/><span>Recrut</span></div>
+        <div class="kc-marque"><@logo taille=34/><span>Relais</span></div>
         <div class="kc-accroche">
             <p class="kc-accroche-titre">${msg("recrutAccroche")}</p>
             <ul class="kc-points">
@@ -104,7 +104,7 @@
 
     <main class="kc-cote">
     <div class="${properties.kcFormCardClass!}">
-        <div class="kc-marque kc-marque-mobile"><@logo taille=30/><span>Recrut</span></div>
+        <div class="kc-marque kc-marque-mobile"><@logo taille=30/><span>Relais</span></div>
         <header class="${properties.kcFormHeaderClass!}">
             <#if realm.internationalizationEnabled && locale.supported?size gt 1>
                 <div class="${properties.kcLocaleMainClass!}" id="kc-locale">

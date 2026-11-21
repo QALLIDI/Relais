@@ -60,7 +60,7 @@ export default function MesDonnees() {
   const lignes: { cle: Choix; titre: string; aide: string }[] = [
     { cle: 'presentation', titre: 'Présenter mon profil aux entreprises', aide: c.consentementLe ? `Donné le ${dateFr(c.consentementLe)}. Indispensable pour recevoir des propositions.` : 'Indispensable pour recevoir des propositions.' },
     { cle: 'vivier', titre: 'Rester dans le vivier du cabinet', aide: 'Si je ne suis pas retenu, mon recruteur peut me proposer d’autres postes.' },
-    { cle: 'actualites', titre: 'Recevoir les actualités de Recrut', aide: 'Un e-mail par mois au plus.' },
+    { cle: 'actualites', titre: 'Recevoir les actualités de Relais', aide: 'Un e-mail par mois au plus.' },
   ];
 
   return (

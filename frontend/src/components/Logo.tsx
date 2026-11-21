@@ -1,5 +1,5 @@
 /**
- * Logo Recrut, dans le bleu d'action de l'application.
+ * Logo Relais, dans le bleu d'action de l'application.
  * Le même dessin sert d'icône d'onglet (public/favicon.svg) : penser à les garder identiques.
  */
 export function Logo({ taille = 30 }: { taille?: number }) {
